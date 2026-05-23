@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard - RPD-AI Prototype</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f7f7f7;
+        }
+
+        h1, h2, h3 {
+            color: #222;
+        }
+
+        .top-bar {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .course-card {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        input, textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px;
+            margin-top: 5px;
+            margin-bottom: 12px;
+        }
+
+        textarea {
+            min-height: 80px;
+        }
+
+        button {
+            padding: 7px 12px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background: white;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        th {
+            background: #eeeeee;
+        }
+
+        .button-link {
+            display: inline-block;
+            padding: 7px 10px;
+            background: #eeeeee;
+            border: 1px solid #999;
+            text-decoration: none;
+            color: black;
+            margin: 2px;
+        }
+
+        .button-link:hover {
+            background: #dddddd;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border: 1px solid #999;
+            background: #f0f0f0;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .hint {
+            background: #fff9db;
+            border: 1px solid #d6c36a;
+            padding: 10px;
+            margin-top: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .small {
+            font-size: 13px;
+            color: #555;
+        }
+
+        .inline-form {
+            display: inline;
+        }
+
+        .empty {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+{% set status_labels = {
+    "DRAFT_EDITING": "Editing",
+    "DRAFT_SUBMITTED_FOR_REVIEW": "Submitted for review",
+    "DRAFT_FEEDBACK_GIVEN": "Feedback given",
+    "DRAFT_RESUBMITTED_FOR_REVIEW": "Resubmitted for review",
+    "RPD_VALIDATED": "Validated"
+} %}
+
+<div class="top-bar">
+    <h1>RPD-AI Prototype Dashboard</h1>
+
+    <p>
+        Logged in as:
+        <strong>{{ user.name }}</strong>
+        ({{ user.email }})
+    </p>
+
+    <p>
+        Active role:
+        <strong>{{ role_labels[active_role] }}</strong>
+    </p>
+
+    <p>
+        {% for role in user_roles %}
+            {% if role != active_role %}
+                <a class="button-link" href="/switch-role?role={{ role }}">
+                    Switch to {{ role_labels[role] }}
+                </a>
+            {% endif %}
+        {% endfor %}
+
+        <a class="button-link" href="/admin/users">Admin / Users</a>
+        <a class="button-link" href="/logout">Logout</a>
+    </p>
+</div>
+
+
+{% if active_role == role_teacher %}
+
+    <div class="card">
+        <h2>Teacher Dashboard</h2>
+        <p>
+            As a teacher, you can create courses, upload materials, generate RPD drafts,
+            edit drafts, and submit them for methodist review.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Create Course</h2>
+
+        <form action="/ui/courses" method="post">
+            <label>Course title</label>
+            <input type="text" name="title" required>
+
+            <label>Course description</label>
+            <textarea name="description"></textarea>
+
+            <button type="submit">Create Course</button>
+        </form>
+    </div>
+
+    <h2>Your Courses</h2>
+
+    {% if courses %}
+        {% for course in courses %}
+            <div class="course-card">
+                <h3>{{ course.title }}</h3>
+
+                {% if course.description %}
+                    <p>{{ course.description }}</p>
+                {% else %}
+                    <p class="empty">No course description yet.</p>
+                {% endif %}
+
+                <h4>Uploaded Materials</h4>
+
+                {% if course.materials %}
+                    <ul>
+                        {% for material in course.materials %}
+                            <li>{{ material.filename }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="empty">No materials uploaded yet.</p>
+                {% endif %}
+
+                <form action="/ui/courses/{{ course.id }}/materials" method="post" enctype="multipart/form-data">
+                    <label>Upload material (.txt or .md)</label>
+                    <input type="file" name="file" required>
+                    <button type="submit">Upload Material</button>
+                </form>
+
+                <h4>Draft Generation</h4>
+
+                {% if course.materials %}
+                    <div class="hint">
+                        Draft generation uses VseGPT and may take up to 1 minute.
+                        Please wait after clicking the button.
+                    </div>
+
+                    <form action="/ui/courses/{{ course.id }}/generate-draft" method="post">
+                        <button type="submit">Generate RPD Draft</button>
+                    </form>
+                {% else %}
+                    <p class="empty">
+                        Upload at least one material before generating a draft.
+                    </p>
+                {% endif %}
+
+                <h4>Drafts</h4>
+
+                {% if course.drafts %}
+                    <table>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Feedback</th>
+                            <th>Actions</th>
+                        </tr>
+
+                        {% for draft in course.drafts %}
+                            <tr>
+                                <td>{{ draft.name }}</td>
+
+                                <td>
+                                    <span class="status">
+                                        {{ status_labels.get(draft.status, draft.status) }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    {% if draft.feedback and draft.status == "DRAFT_FEEDBACK_GIVEN" %}
+                                        Feedback is available.
+                                    {% elif draft.status in ["DRAFT_SUBMITTED_FOR_REVIEW", "DRAFT_RESUBMITTED_FOR_REVIEW"] %}
+                                        Waiting for methodist review.
+                                    {% elif draft.status == "RPD_VALIDATED" %}
+                                        RPD has been validated.
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <a class="button-link" href="/drafts/{{ draft.id }}/view">View</a>
+                                    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Download DOCX</a>
+
+                                    {% if draft.status in ["DRAFT_EDITING", "DRAFT_FEEDBACK_GIVEN"] %}
+                                        <a class="button-link" href="/drafts/{{ draft.id }}/edit">Edit</a>
+                                    {% endif %}
+
+                                    {% if draft.status == "DRAFT_EDITING" %}
+                                        <form class="inline-form" action="/ui/drafts/{{ draft.id }}/submit-review" method="post">
+                                            <button type="submit">Submit for Review</button>
+                                        </form>
+                                    {% endif %}
+
+                                    {% if draft.status == "DRAFT_FEEDBACK_GIVEN" %}
+                                        <form class="inline-form" action="/ui/drafts/{{ draft.id }}/resubmit-review" method="post">
+                                            <button type="submit">Resubmit for Review</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                {% else %}
+                    <p class="empty">No drafts generated yet.</p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p class="empty">You do not have any courses yet.</p>
+    {% endif %}
+
+{% endif %}
+
+
+{% if active_role == role_methodist %}
+
+    <div class="card">
+        <h2>Methodist Dashboard</h2>
+        <p>
+            As a methodist, you can review submitted RPD drafts, write feedback,
+            mark feedback as given, or validate the RPD.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>Methodist Inbox</h2>
+
+        {% if inbox_drafts %}
+            <table>
+                <tr>
+                    <th>Draft</th>
+                    <th>Course</th>
+                    <th>Status</th>
+                    <th>Feedback</th>
+                    <th>Actions</th>
+                </tr>
+
+                {% for draft in inbox_drafts %}
+                    <tr>
+                        <td>{{ draft.name }}</td>
+                        <td>{{ draft.course.title }}</td>
+
+                        <td>
+                            <span class="status">
+                                {{ status_labels.get(draft.status, draft.status) }}
+                            </span>
+                        </td>
+
+                        <td>
+                            {% if draft.feedback %}
+                                Feedback saved.
+                            {% else %}
+                                No feedback yet.
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <a class="button-link" href="/drafts/{{ draft.id }}/view">View</a>
+                            <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Download DOCX</a>
+                            <a class="button-link" href="/drafts/{{ draft.id }}/feedback">Write/Edit Feedback</a>
+
+                            {% if draft.feedback %}
+                                <form class="inline-form" action="/ui/drafts/{{ draft.id }}/mark-feedback-given" method="post">
+                                    <button type="submit">Mark Feedback Given</button>
+                                </form>
+                            {% endif %}
+
+                            <form class="inline-form" action="/ui/drafts/{{ draft.id }}/validate" method="post">
+                                <button type="submit">Validate RPD</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <p class="empty">No drafts are waiting for review.</p>
+        {% endif %}
+    </div>
+
+{% endif %}
+
+</body>
+</html>

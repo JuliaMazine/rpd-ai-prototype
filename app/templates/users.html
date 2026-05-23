@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Users - RPD-AI Prototype</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f7f7f7;
+        }
+
+        h1, h2 {
+            color: #222;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 20px;
+            max-width: 800px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            margin-bottom: 12px;
+        }
+
+        button {
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            margin-bottom: 30px;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            vertical-align: top;
+        }
+
+        th {
+            background: #eaeaea;
+        }
+
+        .message {
+            background: #ecffec;
+            border: 1px solid #8c8;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .error {
+            background: #ffecec;
+            border: 1px solid #d88;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .role-option {
+            margin-bottom: 8px;
+        }
+
+        .role-option input {
+            width: auto;
+            margin-right: 6px;
+        }
+
+        a {
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        code {
+            background: #eee;
+            padding: 2px 4px;
+        }
+    </style>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<a href="/dashboard">← Back to Dashboard</a>
+
+<h1>Admin / Users</h1>
+
+<div class="card">
+    <p>
+        Current user:
+        <strong>{{ current_user.name }}</strong>
+        ({{ current_user.email }})
+    </p>
+</div>
+
+<div class="card">
+    <h2>Create New User</h2>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+    {% if success %}
+        <div class="message">{{ success }}</div>
+    {% endif %}
+
+    <form action="/admin/users" method="post">
+        <label>Name</label>
+        <input type="text" name="name" placeholder="Example: Maria Ivanova" required>
+
+        <label>Email</label>
+        <input type="email" name="email" placeholder="Example: maria@example.com" required>
+
+        <label>Password</label>
+        <input type="text" name="password" placeholder="Example: password123" required>
+
+        <p>Roles</p>
+
+        <div class="role-option">
+            <label>
+                <input type="checkbox" name="roles" value="{{ role_teacher }}">
+                Teacher
+            </label>
+        </div>
+
+        <div class="role-option">
+            <label>
+                <input type="checkbox" name="roles" value="{{ role_methodist }}">
+                Methodist
+            </label>
+        </div>
+
+        <button type="submit">Create User</button>
+    </form>
+</div>
+
+<h2>Existing Users</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Roles</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.name }}</td>
+                <td><code>{{ user.email }}</code></td>
+                <td>
+                    {% for role in user.roles %}
+                        <div>{{ role_labels[role.role] }}</div>
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>

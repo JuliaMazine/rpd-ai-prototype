@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Draft - RPD-AI Prototype</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f7f7f7;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .actions {
+            margin-bottom: 20px;
+        }
+
+        .button-link {
+            display: inline-block;
+            padding: 8px 12px;
+            background: #eeeeee;
+            border: 1px solid #999;
+            text-decoration: none;
+            color: black;
+            margin-right: 8px;
+        }
+
+        .button-link:hover {
+            background: #dddddd;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border: 1px solid #999;
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: "Times New Roman", serif;
+            font-size: 16px;
+            line-height: 1.45;
+            background: #fff;
+            border: 1px solid #ddd;
+            padding: 20px;
+        }
+
+        .feedback {
+            background: #fff9db;
+            border: 1px solid #d6c36a;
+            padding: 15px;
+            white-space: pre-wrap;
+        }
+    </style>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+{% set status_labels = {
+    "DRAFT_EDITING": "Editing",
+    "DRAFT_SUBMITTED_FOR_REVIEW": "Submitted for review",
+    "DRAFT_FEEDBACK_GIVEN": "Feedback given",
+    "DRAFT_RESUBMITTED_FOR_REVIEW": "Resubmitted for review",
+    "RPD_VALIDATED": "Validated"
+} %}
+
+<div class="actions">
+    <a class="button-link" href="/dashboard">Back to Dashboard</a>
+    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Download DOCX</a>
+
+    {% if active_role == "USER_TEACHER" and draft.status in ["DRAFT_EDITING", "DRAFT_FEEDBACK_GIVEN"] %}
+        <a class="button-link" href="/drafts/{{ draft.id }}/edit">Edit Draft</a>
+    {% endif %}
+
+    {% if active_role == "USER_METHODIST" and draft.status in ["DRAFT_SUBMITTED_FOR_REVIEW", "DRAFT_RESUBMITTED_FOR_REVIEW"] %}
+        <a class="button-link" href="/drafts/{{ draft.id }}/feedback">Write Feedback</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h1>{{ draft.name }}</h1>
+
+    <p>
+        <strong>Course:</strong> {{ draft.course.title }}
+    </p>
+
+    <p>
+        <strong>Status:</strong>
+        <span class="status">{{ status_labels.get(draft.status, draft.status) }}</span>
+    </p>
+</div>
+
+{% if draft.feedback %}
+    <div class="card">
+        <h2>Methodist Feedback</h2>
+        <div class="feedback">{{ draft.feedback }}</div>
+    </div>
+{% endif %}
+
+<div class="card">
+    <h2>Draft Content</h2>
+    <pre>{{ draft.content }}</pre>
+</div>
+
+</body>
+</html>

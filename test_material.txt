@@ -1,0 +1,1 @@
+This course introduces machine learning, supervised learning, model training, evaluation metrics, neural networks, and practical data analysis.

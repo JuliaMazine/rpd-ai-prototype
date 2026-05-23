@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - RPD-AI Prototype</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background: #f7f7f7;
+        }
+
+        h1, h2 {
+            color: #222;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            max-width: 1100px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+
+        .error {
+            background: #ffecec;
+            border: 1px solid #d88;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .success {
+            background: #ecffec;
+            border: 1px solid #8c8;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .role-option {
+            margin-bottom: 8px;
+        }
+
+        .role-option input {
+            width: auto;
+            margin-right: 6px;
+        }
+
+        .small {
+            font-size: 13px;
+            color: #555;
+        }
+    </style>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+<h1>RPD-AI Prototype</h1>
+
+{% if error %}
+    <div class="error">{{ error }}</div>
+{% endif %}
+
+{% if success %}
+    <div class="success">{{ success }}</div>
+{% endif %}
+
+<div class="container">
+
+    <div class="card">
+        <h2>Sign In</h2>
+
+        <form action="/login" method="post">
+            <label>Email</label>
+            <input type="email" name="email" value="{{ email or '' }}" required>
+
+            <label>Password</label>
+            <input type="password" name="password" required>
+
+            <button type="submit">Sign In</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Create New Account</h2>
+
+        <form action="/register" method="post">
+            <label>Name</label>
+            <input type="text" name="name" placeholder="Example: Anna Maria" required>
+
+            <label>Email</label>
+            <input type="email" name="email" placeholder="Example: anna@example.com" required>
+
+            <label>Password</label>
+            <input type="password" name="password" placeholder="At least 8 characters recommended" required>
+
+            <p>Roles</p>
+
+            <div class="role-option">
+                <label>
+                    <input type="checkbox" name="roles" value="USER_TEACHER">
+                    Teacher
+                </label>
+            </div>
+
+            <div class="role-option">
+                <label>
+                    <input type="checkbox" name="roles" value="USER_METHODIST">
+                    Methodist
+                </label>
+            </div>
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <p class="small">
+            Prototype note: account creation is open here for demo purposes.
+            In the final system, this would usually be restricted to an administrator.
+        </p>
+    </div>
+
+</div>
+
+</body>
+</html>

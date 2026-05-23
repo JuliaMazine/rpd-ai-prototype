@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: rpd_ai_postgres
+    environment:
+      POSTGRES_DB: rpd_ai
+      POSTGRES_USER: rpd_user
+      POSTGRES_PASSWORD: rpd_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
