@@ -8,6 +8,19 @@ The notes propose an AI-assisted system that turns structured teacher-provided c
 
 None of the four proposed success criteria has yet been demonstrated with pilot evidence: structurally complete drafts for selected courses, correct incorporation of supplied course data, relevant catalogue-based competency suggestions, and a measured 50% time reduction.
 
+## MVP Scope
+
+| IN | OUT |
+| --- | --- |
+| Simple interface/form for entering basic course information | Integration with university information systems |
+| Input of course metadata such as course name, educational program, semester, workload/credits, assessment format, and short course description/topics | Automatic extraction of all course information from external systems |
+| Access to a predefined catalogue/list of competencies | Support for every university/faculty/program |
+| AI-based suggestion of relevant competencies based on the provided course information | Automatic official approval or electronic signing of an RPD |
+| Generation of the main required sections of an RPD using an existing RPD structure/template | Multi-user collaborative editing |
+| Generation of a structurally complete editable RPD draft | Version-control and complex approval workflows |
+| Ability for the teacher to review and edit the generated result | |
+| Export/download of the generated RPD in a practical document format, preferably DOCX | |
+
 ## Scope check
 
 | MVP item | Current state | Remaining work |
