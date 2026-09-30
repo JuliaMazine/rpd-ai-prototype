@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.auth import require_role
@@ -14,8 +13,10 @@ from app.database import get_db
 from app.models import Draft
 
 
+from app.web import templates
+
+
 router = APIRouter()
-templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/drafts/{draft_id}/feedback", response_class=HTMLResponse)

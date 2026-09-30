@@ -261,7 +261,7 @@ class TestCourseRoutes:
         db_session.commit()
 
         with patch(
-            "app.containers.course_container.generate_draft_text",
+            "app.routes.course.generate_draft_text",
             return_value="Generated draft content.",
         ):
             response = client.post(

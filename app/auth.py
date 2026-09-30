@@ -2,7 +2,7 @@ from fastapi import HTTPException, Request
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
-from app.constants import ROLE_TEACHER
+from app.constants import ROLE_TEACHER, ROLE_METHODIST
 from app.models import CourseTeacher, Draft, User
 
 
@@ -112,3 +112,18 @@ def require_draft_teacher(
         )
 
     return user, draft
+
+def require_draft_reader(request: Request, db: Session, draft_id: int) -> Draft:
+    """Readers must have their active role and teachers must own the course."""
+    role = get_active_role(request)
+    if role == ROLE_TEACHER:
+        _, draft = require_draft_teacher(request, db, draft_id)
+        return draft
+    if role == ROLE_METHODIST:
+        require_role(request, db, ROLE_METHODIST)
+        draft = db.get(Draft, draft_id)
+        if draft is None:
+            raise HTTPException(404, "Draft not found")
+        return draft
+    require_login(request, db)
+    raise HTTPException(403, "Access denied")

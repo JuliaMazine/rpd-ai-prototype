@@ -23,12 +23,16 @@ docker compose up -d db
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
+python -m pip install pytest
 ```
 
 Create a local `.env` file (it is ignored by Git). The values below match the **development-only** database credentials in `docker-compose.yml`; change them before any shared deployment.
 
 ```dotenv
 DATABASE_URL=postgresql+psycopg2://rpd_user:rpd_password@localhost:5432/rpd_ai
+SESSION_SECRET=replace-with-a-random-secret
+SEED_DEMO_DATA=true
+SECURE_COOKIES=false
 VSEGPT_API_KEY=
 VSEGPT_MODEL=
 VSEGPT_BASE_URL=https://api.vsegpt.ru/v1
@@ -40,7 +44,7 @@ Start the web app:
 python -m uvicorn app.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000`. An empty API key/model uses a static fallback draft rather than AI generation. The app creates its database tables on startup; there is no migration workflow yet. Startup also seeds demo users with known passwords—**do not expose this configuration to the internet or use it with real student/teacher data**.
+Open `http://127.0.0.1:8000`. An empty API key/model uses a static fallback draft rather than AI generation. The app creates its database tables on startup; there is no migration workflow yet. Demo seeding is disabled by default; `SEED_DEMO_DATA=true` enables demo users with known passwords—**do not expose this configuration to the internet or use it with real student/teacher data**.
 
 ## Tests
 
@@ -48,10 +52,22 @@ Open `http://127.0.0.1:8000`. An empty API key/model uses a static fallback draf
 python -m pytest
 ```
 
-Tests use a local SQLite database and mock or bypass external generation. They do not establish RPD content quality, competency relevance, or the planned time-saving target.
+Tests use an in-memory SQLite database and temporary upload directories and mock or bypass external generation. They do not establish RPD content quality, competency relevance, or the planned time-saving target.
 
 ## Project boundaries
 
 The proposed MVP is a teacher-facing draft generator with structured course input, competency suggestions from a predefined catalogue, editable output, and a DOCX download. University-system integrations, official approval/signing, multi-user co-editing, and complex approval workflows are out of scope. The current methodist review flow is prototype functionality, not official approval.
 
 Review repository contents before sharing: `.env` is ignored, but some sample files under `uploads/` are currently tracked by Git. Do not commit confidential course material or credentials.
+
+## Code organization
+
+- `app/routes/`: HTTP handlers for authentication, courses, drafts, and reviews.
+- `app/services/`: shared user validation/creation, material storage, generation, seeding, and DOCX export.
+- `app/auth.py`: session and role checks, including course ownership and draft read access.
+- `app/config.py`: environment settings and absolute project paths; `.env.example` lists supported settings.
+- `app/main.py`: app factory and startup lifecycle. Importing it does not create tables or seed users.
+
+Set a random persistent `SESSION_SECRET` (for example, generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"`). If omitted, a random secret is generated on each process start and existing sessions expire after restart. Use `SECURE_COOKIES=true` when serving over HTTPS. `UPLOAD_DIR` can override the default project upload folder. Text uploads are limited to 5 MiB, validated as UTF-8 before writing, and stored using unique server-generated filenames.
+
+The existing prototype account policy still allows self-registration as a teacher or methodist and user management by any signed-in user. An administrator role and restricted registration require a separate access-policy change.
