@@ -14,13 +14,10 @@ from app.main import app
 from app.models import Course, CourseTeacher, Draft, Material, User, UserRole
 
 
-TEST_DB_PATH = os.path.join(os.path.dirname(__file__), "test.db")
-TEST_DB_URL = f"sqlite:///{TEST_DB_PATH}"
+from sqlalchemy.pool import StaticPool
 
 TEST_ENGINE = create_engine(
-    TEST_DB_URL,
-    connect_args={"check_same_thread": False},
-    echo=False,
+    "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool,
 )
 TestSessionLocal = sessionmaker(
     bind=TEST_ENGINE,
@@ -202,3 +199,10 @@ def methodist_client(client, db_session):
         data={"email": "methodist-auth@test.com", "password": "password123"},
     )
     yield client
+
+
+@pytest.fixture(autouse=True)
+def isolated_uploads(tmp_path, monkeypatch):
+    from dataclasses import replace
+    from app.config import settings
+    monkeypatch.setattr("app.services.material_service.settings", replace(settings, upload_dir=tmp_path))

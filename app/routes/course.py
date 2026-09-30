@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -7,14 +5,13 @@ from sqlalchemy.orm import Session
 from app.auth import require_course_teacher, require_role
 from app.constants import ROLE_TEACHER, STATUS_DRAFT_EDITING
 from app.database import get_db
-from app.models import Course, CourseTeacher, Draft, Material
+from app.models import Course, CourseTeacher, Draft
+from app.config import settings
+from app.services.material_service import save_material
 from app.services.llm_service import generate_draft_text
 
 
 router = APIRouter()
-
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(exist_ok=True)
 
 
 @router.post("/ui/courses")
@@ -26,11 +23,13 @@ def ui_create_course(
 ):
     user = require_role(request, db, ROLE_TEACHER)
 
-    course = Course(title=title, description=description)
+    title = title.strip()
+    if not title or len(title) > 255:
+        raise HTTPException(400, "Course title must contain 1 to 255 characters")
+    course = Course(title=title, description=description.strip())
 
     db.add(course)
-    db.commit()
-    db.refresh(course)
+    db.flush()
 
     db.add(CourseTeacher(course_id=course.id, user_id=user.id))
     db.commit()
@@ -52,44 +51,11 @@ async def ui_upload_material(
     if course is None:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    allowed_extensions = [".txt", ".md"]
-    file_extension = Path(file.filename).suffix.lower()
-
-    if file_extension not in allowed_extensions:
-        raise HTTPException(
-            status_code=400,
-            detail="Unsupported file type. Only .txt and .md are supported in the prototype.",
-        )
-
-    course_upload_dir = UPLOAD_DIR / f"course_{course_id}"
-    course_upload_dir.mkdir(parents=True, exist_ok=True)
-
-    file_path = course_upload_dir / file.filename
-
-    file_bytes = await file.read()
-
-    if not file_bytes:
-        raise HTTPException(status_code=400, detail="Uploaded file is empty")
-
-    file_path.write_bytes(file_bytes)
-
     try:
-        extracted_text = file_bytes.decode("utf-8")
-    except UnicodeDecodeError:
-        raise HTTPException(
-            status_code=400,
-            detail="Could not read file as UTF-8 text",
-        )
-
-    material = Material(
-        course_id=course_id,
-        filename=file.filename,
-        file_path=str(file_path),
-        extracted_text=extracted_text,
-    )
-
-    db.add(material)
-    db.commit()
+        file_bytes = await file.read(settings.max_upload_bytes + 1)
+        save_material(db, course_id, file.filename, file_bytes)
+    finally:
+        await file.close()
 
     return RedirectResponse(url="/dashboard", status_code=303)
 
