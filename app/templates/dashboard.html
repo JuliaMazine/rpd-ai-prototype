@@ -213,8 +213,9 @@
                 {% endif %}
 
                 <form action="/ui/courses/{{ course.id }}/materials" method="post" enctype="multipart/form-data">
-                    <label>Загрузить материал (.txt или .md)</label>
-                    <input type="file" name="file" required>
+                    <label>Загрузить материал (.txt, .md, .pdf или .docx)</label>
+                    <input type="file" name="file" accept=".txt,.md,.pdf,.docx" required>
+                    <p class="empty">До 5 МиБ. PDF должен содержать текст; сканы нужно предварительно распознать. Документы Word — в формате .docx.</p>
                     <button type="submit">Загрузить материал</button>
                 </form>
 
