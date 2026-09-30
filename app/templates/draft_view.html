@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>View Draft - RPD-AI Prototype</title>
+    <title>Просмотр черновика — РПД</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -64,24 +64,19 @@
 </head>
 <body>
 
-{% set status_labels = {
-    "DRAFT_EDITING": "Editing",
-    "DRAFT_SUBMITTED_FOR_REVIEW": "Submitted for review",
-    "DRAFT_FEEDBACK_GIVEN": "Feedback given",
-    "DRAFT_RESUBMITTED_FOR_REVIEW": "Resubmitted for review",
-    "RPD_VALIDATED": "Validated"
-} %}
+
+
 
 <div class="actions">
-    <a class="button-link" href="/dashboard">Back to Dashboard</a>
-    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Download DOCX</a>
+    <a class="button-link" href="/dashboard">К панели управления</a>
+    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
 
     {% if active_role == "USER_TEACHER" and draft.status in ["DRAFT_EDITING", "DRAFT_FEEDBACK_GIVEN"] %}
-        <a class="button-link" href="/drafts/{{ draft.id }}/edit">Edit Draft</a>
+        <a class="button-link" href="/drafts/{{ draft.id }}/edit">Редактировать черновик</a>
     {% endif %}
 
     {% if active_role == "USER_METHODIST" and draft.status in ["DRAFT_SUBMITTED_FOR_REVIEW", "DRAFT_RESUBMITTED_FOR_REVIEW"] %}
-        <a class="button-link" href="/drafts/{{ draft.id }}/feedback">Write Feedback</a>
+        <a class="button-link" href="/drafts/{{ draft.id }}/feedback">Добавить замечания</a>
     {% endif %}
 </div>
 
@@ -89,24 +84,24 @@
     <h1>{{ draft.name }}</h1>
 
     <p>
-        <strong>Course:</strong> {{ draft.course.title }}
+        <strong>Дисциплина:</strong> {{ draft.course.title }}
     </p>
 
     <p>
-        <strong>Status:</strong>
+        <strong>Статус:</strong>
         <span class="status">{{ status_labels.get(draft.status, draft.status) }}</span>
     </p>
 </div>
 
 {% if draft.feedback %}
     <div class="card">
-        <h2>Methodist Feedback</h2>
+        <h2>Замечания методиста</h2>
         <div class="feedback">{{ draft.feedback }}</div>
     </div>
 {% endif %}
 
 <div class="card">
-    <h2>Draft Content</h2>
+    <h2>Содержание черновика</h2>
     <pre>{{ draft.content }}</pre>
 </div>
 

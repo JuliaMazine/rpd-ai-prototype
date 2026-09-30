@@ -23,8 +23,8 @@ class TestRoleConstants:
     def test_role_labels_contains_both_roles(self):
         assert ROLE_TEACHER in ROLE_LABELS
         assert ROLE_METHODIST in ROLE_LABELS
-        assert ROLE_LABELS[ROLE_TEACHER] == "Teacher"
-        assert ROLE_LABELS[ROLE_METHODIST] == "Methodist"
+        assert ROLE_LABELS[ROLE_TEACHER] == "Преподаватель"
+        assert ROLE_LABELS[ROLE_METHODIST] == "Методист"
 
 
 class TestStatusConstants:

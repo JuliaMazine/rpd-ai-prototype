@@ -11,6 +11,7 @@ from app.constants import (
 )
 from app.database import get_db
 from app.models import Course, CourseTeacher, Draft
+from app.services.course_service import ASSESSMENT_LABELS
 
 
 from app.web import templates
@@ -75,6 +76,7 @@ def dashboard(
             "role_teacher": ROLE_TEACHER,
             "role_methodist": ROLE_METHODIST,
             "courses": courses,
+            "assessment_labels": ASSESSMENT_LABELS,
             "inbox_drafts": inbox_drafts,
         },
     )

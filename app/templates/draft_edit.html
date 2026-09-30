@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Edit Draft - RPD-AI Prototype</title>
+    <title>Редактирование черновика — РПД</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -74,68 +74,61 @@
 </head>
 <body>
 
-{% set status_labels = {
-    "DRAFT_EDITING": "Editing",
-    "DRAFT_SUBMITTED_FOR_REVIEW": "Submitted for review",
-    "DRAFT_FEEDBACK_GIVEN": "Feedback given",
-    "DRAFT_RESUBMITTED_FOR_REVIEW": "Resubmitted for review",
-    "RPD_VALIDATED": "Validated"
-} %}
+
+
 
 <div class="actions">
-    <a class="button-link" href="/dashboard">Back to Dashboard</a>
-    <a class="button-link" href="/drafts/{{ draft.id }}/view">View Draft</a>
-    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Download DOCX</a>
+    <a class="button-link" href="/dashboard">К панели управления</a>
+    <a class="button-link" href="/drafts/{{ draft.id }}/view">Открыть черновик</a>
+    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
 </div>
 
 <div class="card">
-    <h1>Edit Draft</h1>
+    <h1>Редактировать черновик</h1>
 
     <p>
-        <strong>Name:</strong> {{ draft.name }}
+        <strong>Название:</strong> {{ draft.name }}
     </p>
 
     <p>
-        <strong>Course:</strong> {{ draft.course.title }}
+        <strong>Дисциплина:</strong> {{ draft.course.title }}
     </p>
 
     <p>
-        <strong>Status:</strong>
+        <strong>Статус:</strong>
         <span class="status">{{ status_labels.get(draft.status, draft.status) }}</span>
     </p>
 </div>
 
 {% if draft.feedback %}
     <div class="card">
-        <h2>Methodist Feedback</h2>
+        <h2>Замечания методиста</h2>
         <div class="feedback">{{ draft.feedback }}</div>
     </div>
 {% endif %}
 
 <div class="card">
-    <h2>Draft Text</h2>
+    <h2>Текст черновика</h2>
 
-    <p class="hint">
-        Edit the generated RPD draft below. After saving, you can submit or resubmit it for methodist review.
-    </p>
+    <p class="hint">Отредактируйте черновик РПД. После сохранения его можно отправить методисту на проверку.</p>
 
     <form action="/ui/drafts/{{ draft.id }}/edit" method="post">
         <textarea name="content">{{ draft.content }}</textarea>
 
         <p>
-            <button type="submit">Save Changes</button>
+            <button type="submit">Сохранить изменения</button>
         </p>
     </form>
 
     {% if draft.status == "DRAFT_EDITING" %}
         <form action="/ui/drafts/{{ draft.id }}/submit-review" method="post">
-            <button type="submit">Submit for Review</button>
+            <button type="submit">Отправить на проверку</button>
         </form>
     {% endif %}
 
     {% if draft.status == "DRAFT_FEEDBACK_GIVEN" %}
         <form action="/ui/drafts/{{ draft.id }}/resubmit-review" method="post">
-            <button type="submit">Resubmit for Review</button>
+            <button type="submit">Отправить повторно</button>
         </form>
     {% endif %}
 </div>

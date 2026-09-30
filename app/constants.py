@@ -2,8 +2,8 @@ ROLE_TEACHER = "USER_TEACHER"
 ROLE_METHODIST = "USER_METHODIST"
 
 ROLE_LABELS = {
-    ROLE_TEACHER: "Teacher",
-    ROLE_METHODIST: "Methodist",
+    ROLE_TEACHER: "Преподаватель",
+    ROLE_METHODIST: "Методист",
 }
 
 
@@ -14,11 +14,11 @@ STATUS_RESUBMITTED_FOR_REVIEW = "DRAFT_RESUBMITTED_FOR_REVIEW"
 STATUS_RPD_VALIDATED = "RPD_VALIDATED"
 
 STATUS_LABELS = {
-    STATUS_DRAFT_EDITING: "Editing",
-    STATUS_SUBMITTED_FOR_REVIEW: "Submitted for review",
-    STATUS_FEEDBACK_GIVEN: "Feedback given",
-    STATUS_RESUBMITTED_FOR_REVIEW: "Resubmitted for review",
-    STATUS_RPD_VALIDATED: "Validated",
+    STATUS_DRAFT_EDITING: "Редактирование",
+    STATUS_SUBMITTED_FOR_REVIEW: "На проверке",
+    STATUS_FEEDBACK_GIVEN: "Замечания получены",
+    STATUS_RESUBMITTED_FOR_REVIEW: "Повторная проверка",
+    STATUS_RPD_VALIDATED: "Проверено",
 }
 
 REVIEWABLE_STATUSES = [

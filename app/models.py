@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -45,6 +45,12 @@ class Course(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    educational_program = Column(String(255), nullable=True)
+    semester = Column(Integer, nullable=True)
+    total_hours = Column(Integer, nullable=True)
+    credits = Column(Numeric(5, 2), nullable=True)
+    assessment_format = Column(String(50), nullable=True)
+    topics = Column(Text, nullable=True)
 
     materials = relationship("Material", back_populates="course")
     drafts = relationship("Draft", back_populates="course")

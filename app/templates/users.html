@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Admin Users - RPD-AI Prototype</title>
+    <title>Пользователи — РПД</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -87,23 +87,22 @@
 </head>
 <body>
 
-<a href="/dashboard">← Back to Dashboard</a>
 
-<h1>Admin / Users</h1>
+<a href="/dashboard">← К панели управления</a>
+
+<h1>Пользователи</h1>
 
 <div class="card">
-    <p>
-        Current user:
-        <strong>{{ current_user.name }}</strong>
+    <p>Текущий пользователь:<strong>{{ current_user.name }}</strong>
         ({{ current_user.email }})
     </p>
 </div>
 
 <div class="card">
-    <h2>Create New User</h2>
+    <h2>Создать пользователя</h2>
 
     {% if error %}
-        <div class="error">{{ error }}</div>
+        <div class="error">{{ t(error) }}</div>
     {% endif %}
 
     {% if success %}
@@ -111,44 +110,40 @@
     {% endif %}
 
     <form action="/admin/users" method="post">
-        <label>Name</label>
-        <input type="text" name="name" placeholder="Example: Maria Ivanova" required>
+        <label>Имя</label>
+        <input type="text" name="name" placeholder="Например: Мария Иванова" required>
 
-        <label>Email</label>
-        <input type="email" name="email" placeholder="Example: maria@example.com" required>
+        <label>Электронная почта</label>
+        <input type="email" name="email" placeholder="Например: maria@example.com" required>
 
-        <label>Password</label>
-        <input type="password" name="password" placeholder="Example: password123" required>
+        <label>Пароль</label>
+        <input type="password" name="password" placeholder="Не менее 8 символов" required>
 
-        <p>Roles</p>
+        <p>Роли</p>
 
         <div class="role-option">
             <label>
-                <input type="checkbox" name="roles" value="{{ role_teacher }}">
-                Teacher
-            </label>
+                <input type="checkbox" name="roles" value="{{ role_teacher }}">Преподаватель</label>
         </div>
 
         <div class="role-option">
             <label>
-                <input type="checkbox" name="roles" value="{{ role_methodist }}">
-                Methodist
-            </label>
+                <input type="checkbox" name="roles" value="{{ role_methodist }}">Методист</label>
         </div>
 
-        <button type="submit">Create User</button>
+        <button type="submit">Создать пользователя</button>
     </form>
 </div>
 
-<h2>Existing Users</h2>
+<h2>Пользователи</h2>
 
 <table>
     <thead>
         <tr>
             <th>ID</th>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Roles</th>
+            <th>Имя</th>
+            <th>Электронная почта</th>
+            <th>Роли</th>
         </tr>
     </thead>
 

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Dashboard - RPD-AI Prototype</title>
+    <title>Панель управления — РПД</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -120,39 +120,30 @@
 </head>
 <body>
 
-{% set status_labels = {
-    "DRAFT_EDITING": "Editing",
-    "DRAFT_SUBMITTED_FOR_REVIEW": "Submitted for review",
-    "DRAFT_FEEDBACK_GIVEN": "Feedback given",
-    "DRAFT_RESUBMITTED_FOR_REVIEW": "Resubmitted for review",
-    "RPD_VALIDATED": "Validated"
-} %}
+
+
 
 <div class="top-bar">
-    <h1>RPD-AI Prototype Dashboard</h1>
+    <h1>Панель управления РПД</h1>
 
-    <p>
-        Logged in as:
-        <strong>{{ user.name }}</strong>
+    <p>Вы вошли как:<strong>{{ user.name }}</strong>
         ({{ user.email }})
     </p>
 
-    <p>
-        Active role:
-        <strong>{{ role_labels[active_role] }}</strong>
+    <p>Активная роль:<strong>{{ role_labels[active_role] }}</strong>
     </p>
 
     <p>
         {% for role in user_roles %}
             {% if role != active_role %}
                 <a class="button-link" href="/switch-role?role={{ role }}">
-                    Switch to {{ role_labels[role] }}
+                    Переключиться на {{ role_labels[role] }}
                 </a>
             {% endif %}
         {% endfor %}
 
-        <a class="button-link" href="/admin/users">Admin / Users</a>
-        <a class="button-link" href="/logout">Logout</a>
+        <a class="button-link" href="/admin/users">Пользователи</a>
+        <a class="button-link" href="/logout">Выйти</a>
     </p>
 </div>
 
@@ -160,28 +151,24 @@
 {% if active_role == role_teacher %}
 
     <div class="card">
-        <h2>Teacher Dashboard</h2>
-        <p>
-            As a teacher, you can create courses, upload materials, generate RPD drafts,
-            edit drafts, and submit them for methodist review.
-        </p>
+        <h2>Панель преподавателя</h2>
+        <p>Вы можете создавать дисциплины, загружать материалы, создавать и редактировать черновики РПД, а затем отправлять их методисту на проверку.</p>
     </div>
 
     <div class="card">
-        <h2>Create Course</h2>
+        <h2>Создать дисциплину</h2>
 
         <form action="/ui/courses" method="post">
-            <label>Course title</label>
-            <input type="text" name="title" required>
+            {% with form_course=None %}
+                {% include "course_fields.html" %}
+            {% endwith %}
+            <p class="empty">Неизвестные сведения можно оставить пустыми и заполнить позже.</p>
 
-            <label>Course description</label>
-            <textarea name="description"></textarea>
-
-            <button type="submit">Create Course</button>
+            <button type="submit">Создать дисциплину</button>
         </form>
     </div>
 
-    <h2>Your Courses</h2>
+    <h2>Ваши дисциплины</h2>
 
     {% if courses %}
         {% for course in courses %}
@@ -191,10 +178,29 @@
                 {% if course.description %}
                     <p>{{ course.description }}</p>
                 {% else %}
-                    <p class="empty">No course description yet.</p>
+                    <p class="empty">Описание дисциплины пока не добавлено.</p>
                 {% endif %}
 
-                <h4>Uploaded Materials</h4>
+                <p>
+                    Программа: {{ course.educational_program or 'Уточняется' }} ·
+                    Семестр: {{ course.semester or 'Уточняется' }} ·
+                    Часы: {{ course.total_hours or 'Уточняется' }} ·
+                    Зачетные единицы: {{ course.credits or 'Уточняется' }} ·
+                    Аттестация: {{ assessment_labels.get(course.assessment_format, 'Уточняется') }}
+                </p>
+                {% if course.topics %}<p style="white-space: pre-wrap">{{ course.topics }}</p>{% endif %}
+                <details>
+                    <summary>Изменить сведения о дисциплине</summary>
+                    <form action="/ui/courses/{{ course.id }}/edit" method="post">
+                        {% with form_course=course %}
+                            {% include "course_fields.html" %}
+                        {% endwith %}
+                        <p class="empty">Изменения применяются к новым черновикам. Текст сохраненных черновиков остается прежним.</p>
+                        <button type="submit">Сохранить сведения</button>
+                    </form>
+                </details>
+
+                <h4>Загруженные материалы</h4>
 
                 {% if course.materials %}
                     <ul>
@@ -203,41 +209,37 @@
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <p class="empty">No materials uploaded yet.</p>
+                    <p class="empty">Материалы пока не загружены.</p>
                 {% endif %}
 
                 <form action="/ui/courses/{{ course.id }}/materials" method="post" enctype="multipart/form-data">
-                    <label>Upload material (.txt or .md)</label>
+                    <label>Загрузить материал (.txt или .md)</label>
                     <input type="file" name="file" required>
-                    <button type="submit">Upload Material</button>
+                    <button type="submit">Загрузить материал</button>
                 </form>
 
-                <h4>Draft Generation</h4>
+                <h4>Создание черновика</h4>
+                <p class="empty">Черновики РПД создаются на русском языке.</p>
 
                 {% if course.materials %}
-                    <div class="hint">
-                        Draft generation uses VseGPT and may take up to 1 minute.
-                        Please wait after clicking the button.
-                    </div>
+                    <div class="hint">Создание может занять около минуты. Если API не настроен, используется шаблонный черновик.</div>
 
                     <form action="/ui/courses/{{ course.id }}/generate-draft" method="post">
-                        <button type="submit">Generate RPD Draft</button>
+                        <button type="submit">Создать черновик РПД</button>
                     </form>
                 {% else %}
-                    <p class="empty">
-                        Upload at least one material before generating a draft.
-                    </p>
+                    <p class="empty">Перед созданием черновика загрузите хотя бы один материал.</p>
                 {% endif %}
 
-                <h4>Drafts</h4>
+                <h4>Черновики</h4>
 
                 {% if course.drafts %}
                     <table>
                         <tr>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Feedback</th>
-                            <th>Actions</th>
+                            <th>Имя</th>
+                            <th>Статус</th>
+                            <th>Замечания</th>
+                            <th>Действия</th>
                         </tr>
 
                         {% for draft in course.drafts %}
@@ -252,33 +254,33 @@
 
                                 <td>
                                     {% if draft.feedback and draft.status == "DRAFT_FEEDBACK_GIVEN" %}
-                                        Feedback is available.
+                                        Есть замечания.
                                     {% elif draft.status in ["DRAFT_SUBMITTED_FOR_REVIEW", "DRAFT_RESUBMITTED_FOR_REVIEW"] %}
-                                        Waiting for methodist review.
+                                        Ожидается проверка методистом.
                                     {% elif draft.status == "RPD_VALIDATED" %}
-                                        RPD has been validated.
+                                        РПД проверена.
                                     {% else %}
                                         —
                                     {% endif %}
                                 </td>
 
                                 <td>
-                                    <a class="button-link" href="/drafts/{{ draft.id }}/view">View</a>
-                                    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Download DOCX</a>
+                                    <a class="button-link" href="/drafts/{{ draft.id }}/view">Открыть</a>
+                                    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
 
                                     {% if draft.status in ["DRAFT_EDITING", "DRAFT_FEEDBACK_GIVEN"] %}
-                                        <a class="button-link" href="/drafts/{{ draft.id }}/edit">Edit</a>
+                                        <a class="button-link" href="/drafts/{{ draft.id }}/edit">Изменить</a>
                                     {% endif %}
 
                                     {% if draft.status == "DRAFT_EDITING" %}
                                         <form class="inline-form" action="/ui/drafts/{{ draft.id }}/submit-review" method="post">
-                                            <button type="submit">Submit for Review</button>
+                                            <button type="submit">Отправить на проверку</button>
                                         </form>
                                     {% endif %}
 
                                     {% if draft.status == "DRAFT_FEEDBACK_GIVEN" %}
                                         <form class="inline-form" action="/ui/drafts/{{ draft.id }}/resubmit-review" method="post">
-                                            <button type="submit">Resubmit for Review</button>
+                                            <button type="submit">Отправить повторно</button>
                                         </form>
                                     {% endif %}
                                 </td>
@@ -286,12 +288,12 @@
                         {% endfor %}
                     </table>
                 {% else %}
-                    <p class="empty">No drafts generated yet.</p>
+                    <p class="empty">Черновики пока не созданы.</p>
                 {% endif %}
             </div>
         {% endfor %}
     {% else %}
-        <p class="empty">You do not have any courses yet.</p>
+        <p class="empty">У вас пока нет дисциплин.</p>
     {% endif %}
 
 {% endif %}
@@ -300,24 +302,21 @@
 {% if active_role == role_methodist %}
 
     <div class="card">
-        <h2>Methodist Dashboard</h2>
-        <p>
-            As a methodist, you can review submitted RPD drafts, write feedback,
-            mark feedback as given, or validate the RPD.
-        </p>
+        <h2>Панель методиста</h2>
+        <p>Вы можете проверять черновики РПД, оставлять замечания, возвращать черновики преподавателю или подтверждать проверку.</p>
     </div>
 
     <div class="card">
-        <h2>Methodist Inbox</h2>
+        <h2>Черновики для проверки</h2>
 
         {% if inbox_drafts %}
             <table>
                 <tr>
-                    <th>Draft</th>
-                    <th>Course</th>
-                    <th>Status</th>
-                    <th>Feedback</th>
-                    <th>Actions</th>
+                    <th>Черновик</th>
+                    <th>Дисциплина</th>
+                    <th>Статус</th>
+                    <th>Замечания</th>
+                    <th>Действия</th>
                 </tr>
 
                 {% for draft in inbox_drafts %}
@@ -333,32 +332,32 @@
 
                         <td>
                             {% if draft.feedback %}
-                                Feedback saved.
+                                Замечания сохранены.
                             {% else %}
-                                No feedback yet.
+                                Замечаний пока нет.
                             {% endif %}
                         </td>
 
                         <td>
-                            <a class="button-link" href="/drafts/{{ draft.id }}/view">View</a>
-                            <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Download DOCX</a>
-                            <a class="button-link" href="/drafts/{{ draft.id }}/feedback">Write/Edit Feedback</a>
+                            <a class="button-link" href="/drafts/{{ draft.id }}/view">Открыть</a>
+                            <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
+                            <a class="button-link" href="/drafts/{{ draft.id }}/feedback">Добавить или изменить замечания</a>
 
                             {% if draft.feedback %}
                                 <form class="inline-form" action="/ui/drafts/{{ draft.id }}/mark-feedback-given" method="post">
-                                    <button type="submit">Mark Feedback Given</button>
+                                    <button type="submit">Вернуть с замечаниями</button>
                                 </form>
                             {% endif %}
 
                             <form class="inline-form" action="/ui/drafts/{{ draft.id }}/validate" method="post">
-                                <button type="submit">Validate RPD</button>
+                                <button type="submit">Подтвердить проверку РПД</button>
                             </form>
                         </td>
                     </tr>
                 {% endfor %}
             </table>
         {% else %}
-            <p class="empty">No drafts are waiting for review.</p>
+            <p class="empty">Нет черновиков, ожидающих проверки.</p>
         {% endif %}
     </div>
 
