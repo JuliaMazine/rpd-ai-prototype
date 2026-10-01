@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Feedback - RPD-AI Prototype</title>
+    <title>Замечания — РПД</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -82,60 +82,53 @@
 </head>
 <body>
 
-{% set status_labels = {
-    "DRAFT_EDITING": "Editing",
-    "DRAFT_SUBMITTED_FOR_REVIEW": "Submitted for review",
-    "DRAFT_FEEDBACK_GIVEN": "Feedback given",
-    "DRAFT_RESUBMITTED_FOR_REVIEW": "Resubmitted for review",
-    "RPD_VALIDATED": "Validated"
-} %}
+
+
 
 <div class="actions">
-    <a class="button-link" href="/dashboard">Back to Dashboard</a>
-    <a class="button-link" href="/drafts/{{ draft.id }}/view">View Draft</a>
-    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Download DOCX</a>
+    <a class="button-link" href="/dashboard">К панели управления</a>
+    <a class="button-link" href="/drafts/{{ draft.id }}/view">Открыть черновик</a>
+    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
 </div>
 
 <div class="card">
-    <h1>Methodist Feedback</h1>
+    <h1>Замечания методиста</h1>
 
     <p>
-        <strong>Draft:</strong> {{ draft.name }}
+        <strong>Черновик:</strong> {{ draft.name }}
     </p>
 
     <p>
-        <strong>Course:</strong> {{ draft.course.title }}
+        <strong>Дисциплина:</strong> {{ draft.course.title }}
     </p>
 
     <p>
-        <strong>Status:</strong>
+        <strong>Статус:</strong>
         <span class="status">{{ status_labels.get(draft.status, draft.status) }}</span>
     </p>
 </div>
 
 <div class="card">
-    <h2>Draft Content</h2>
+    <h2>Содержание черновика</h2>
     <pre>{{ draft.content }}</pre>
 </div>
 
 <div class="card">
-    <h2>Write Feedback</h2>
+    <h2>Добавить замечания</h2>
 
-    <div class="hint">
-        First save the feedback. Then click “Mark Feedback Given” to return the draft to the teacher.
-    </div>
+    <div class="hint">Сначала сохраните замечания. Затем нажмите «Вернуть с замечаниями», чтобы вернуть черновик преподавателю.</div>
 
     <form action="/ui/drafts/{{ draft.id }}/feedback" method="post">
-        <textarea name="feedback" placeholder="Write methodist feedback here...">{{ draft.feedback or "" }}</textarea>
+        <textarea name="feedback" placeholder="Введите замечания методиста...">{{ draft.feedback or "" }}</textarea>
 
         <p>
-            <button type="submit">Save Feedback</button>
+            <button type="submit">Сохранить замечания</button>
         </p>
     </form>
 
     {% if draft.feedback %}
         <form action="/ui/drafts/{{ draft.id }}/mark-feedback-given" method="post">
-            <button type="submit">Mark Feedback Given</button>
+            <button type="submit">Вернуть с замечаниями</button>
         </form>
     {% endif %}
 </div>

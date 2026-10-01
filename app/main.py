@@ -2,6 +2,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException
+from app.localization import translate
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import APP_DIR, Settings, settings
@@ -19,6 +22,11 @@ def create_app(config: Settings = settings) -> FastAPI:
         yield
 
     application = FastAPI(title='RPD-AI Prototype', lifespan=lifespan)
+    @application.exception_handler(HTTPException)
+    async def russian_http_error(request, error):
+        detail = translate(error.detail) if isinstance(error.detail, str) else error.detail
+        return JSONResponse({"detail": detail}, status_code=error.status_code, headers=error.headers)
+
     application.add_middleware(
         SessionMiddleware,
         secret_key=config.session_secret,

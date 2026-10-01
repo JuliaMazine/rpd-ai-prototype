@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -9,6 +9,7 @@ from app.models import Course, CourseTeacher, Draft
 from app.config import settings
 from app.services.material_service import save_material
 from app.services.llm_service import generate_draft_text
+from app.services.course_service import CourseInput, course_form
 
 
 router = APIRouter()
@@ -17,16 +18,12 @@ router = APIRouter()
 @router.post("/ui/courses")
 def ui_create_course(
     request: Request,
-    title: str = Form(...),
-    description: str = Form(""),
+    data: CourseInput = Depends(course_form),
     db: Session = Depends(get_db),
 ):
     user = require_role(request, db, ROLE_TEACHER)
 
-    title = title.strip()
-    if not title or len(title) > 255:
-        raise HTTPException(400, "Course title must contain 1 to 255 characters")
-    course = Course(title=title, description=description.strip())
+    course = Course(**data.model_dump())
 
     db.add(course)
     db.flush()
@@ -34,6 +31,23 @@ def ui_create_course(
     db.add(CourseTeacher(course_id=course.id, user_id=user.id))
     db.commit()
 
+    return RedirectResponse(url="/dashboard", status_code=303)
+
+
+@router.post("/ui/courses/{course_id}/edit")
+def ui_edit_course(
+    request: Request,
+    course_id: int,
+    data: CourseInput = Depends(course_form),
+    db: Session = Depends(get_db),
+):
+    require_course_teacher(request, db, course_id)
+    course = db.get(Course, course_id)
+    if course is None:
+        raise HTTPException(404, "Course not found")
+    for name, value in data.model_dump().items():
+        setattr(course, name, value)
+    db.commit()
     return RedirectResponse(url="/dashboard", status_code=303)
 
 
@@ -89,7 +103,7 @@ def ui_generate_draft(
 
     draft = Draft(
         course_id=course.id,
-        name=f"RPD Draft v{draft_number} - {course.title}",
+        name=f"Черновик РПД v{draft_number} — {course.title}",
         content=draft_content,
         feedback=None,
         status=STATUS_DRAFT_EDITING,

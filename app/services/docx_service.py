@@ -6,6 +6,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
 
 from app.models import Draft
+from app.constants import STATUS_LABELS
 
 
 def clean_filename(filename: str) -> str:
@@ -106,7 +107,7 @@ def build_draft_docx(draft: Draft) -> BytesIO:
 
     metadata = document.add_paragraph()
     metadata.add_run("Статус черновика: ").bold = True
-    metadata.add_run(draft.status)
+    metadata.add_run(STATUS_LABELS.get(draft.status, draft.status))
 
     document.add_paragraph()
 

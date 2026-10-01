@@ -1,0 +1,32 @@
+<label>Название дисциплины</label>
+<input type="text" name="title" maxlength="255" value="{{ form_course.title if form_course else '' }}" required>
+
+<label>Образовательная программа</label>
+<input type="text" name="educational_program" maxlength="255" placeholder="Например: Информатика и вычислительная техника" value="{{ form_course.educational_program or '' if form_course else '' }}">
+
+<label>Семестр</label>
+<input type="number" name="semester" min="1" max="20" step="1" value="{{ form_course.semester or '' if form_course else '' }}">
+
+<label>Общая трудоемкость (академические часы)</label>
+<input type="number" name="total_hours" min="1" max="10000" step="1" value="{{ form_course.total_hours or '' if form_course else '' }}">
+
+<label>Зачетные единицы (з.е.)</label>
+<input type="number" name="credits" min="0.01" max="100" step="0.01" value="{{ form_course.credits or '' if form_course else '' }}">
+
+<label>Форма промежуточной аттестации</label>
+<select name="assessment_format">
+    <option value="">Уточняется</option>
+    {% for value, label in assessment_labels.items() %}
+        <option value="{{ value }}" {% if form_course and form_course.assessment_format == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+</select>
+
+<label>Краткое описание дисциплины</label>
+<textarea name="description" maxlength="10000">{{ form_course.description or '' if form_course else '' }}</textarea>
+
+<label>Что будут изучать студенты?</label>
+<textarea name="topics" maxlength="16000" placeholder="Переменные и типы данных
+Условия и циклы
+Функции">{{ form_course.topics or '' if form_course else '' }}</textarea>
+
+<p class="empty">Перечислите основные темы, каждую с новой строки.</p>

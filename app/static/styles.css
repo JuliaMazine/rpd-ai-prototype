@@ -336,3 +336,15 @@ textarea[name="content"] {
     button, .button-link { width: auto; margin-top: 8px; padding: 10px 16px !important; }
     .actions { gap: 8px; }
 }
+select {
+    width: 100%;
+    padding: 12px;
+    margin: 6px 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    font: inherit;
+}
+details { margin: 16px 0; }
+summary { cursor: pointer; font-weight: 600; }

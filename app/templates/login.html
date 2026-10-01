@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <title>Login - RPD-AI Prototype</title>
+    <title>Вход — РПД</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -71,10 +71,11 @@
 </head>
 <body>
 
-<h1>RPD-AI Prototype</h1>
+
+<h1>РПД — ИИ-прототип</h1>
 
 {% if error %}
-    <div class="error">{{ error }}</div>
+    <div class="error">{{ t(error) }}</div>
 {% endif %}
 
 {% if success %}
@@ -84,55 +85,48 @@
 <div class="container">
 
     <div class="card">
-        <h2>Sign In</h2>
+        <h2>Войти</h2>
 
         <form action="/login" method="post">
-            <label>Email</label>
+            <label>Электронная почта</label>
             <input type="email" name="email" value="{{ email or '' }}" required>
 
-            <label>Password</label>
+            <label>Пароль</label>
             <input type="password" name="password" required>
 
-            <button type="submit">Sign In</button>
+            <button type="submit">Войти</button>
         </form>
     </div>
 
     <div class="card">
-        <h2>Create New Account</h2>
+        <h2>Создать учетную запись</h2>
 
         <form action="/register" method="post">
-            <label>Name</label>
-            <input type="text" name="name" placeholder="Example: Anna Maria" required>
+            <label>Имя</label>
+            <input type="text" name="name" placeholder="Например: Анна Мария" required>
 
-            <label>Email</label>
-            <input type="email" name="email" placeholder="Example: anna@example.com" required>
+            <label>Электронная почта</label>
+            <input type="email" name="email" placeholder="Например: anna@example.com" required>
 
-            <label>Password</label>
-            <input type="password" name="password" placeholder="At least 8 characters recommended" required>
+            <label>Пароль</label>
+            <input type="password" name="password" placeholder="Не менее 8 символов" required>
 
-            <p>Roles</p>
+            <p>Роли</p>
 
             <div class="role-option">
                 <label>
-                    <input type="checkbox" name="roles" value="USER_TEACHER">
-                    Teacher
-                </label>
+                    <input type="checkbox" name="roles" value="USER_TEACHER">Преподаватель</label>
             </div>
 
             <div class="role-option">
                 <label>
-                    <input type="checkbox" name="roles" value="USER_METHODIST">
-                    Methodist
-                </label>
+                    <input type="checkbox" name="roles" value="USER_METHODIST">Методист</label>
             </div>
 
-            <button type="submit">Create Account</button>
+            <button type="submit">Создать учетную запись</button>
         </form>
 
-        <p class="small">
-            Prototype note: account creation is open here for demo purposes.
-            In the final system, this would usually be restricted to an administrator.
-        </p>
+        <p class="small">В прототипе регистрация открыта для демонстрации. В рабочей системе создание учетных записей обычно доступно администратору.</p>
     </div>
 
 </div>

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Select Active Role - RPD-AI Prototype</title>
+    <title>Выбор роли — РПД</title>
     <link rel="stylesheet" href="/static/styles.css">
     <style>
 
@@ -126,10 +126,11 @@
 </head>
 <body>
 
-<div class="card">
-    <h1>Select Active Role</h1>
 
-    <p>Logged in as: <strong>{{ user.name }}</strong> ({{ user.email }})</p>
+<div class="card">
+    <h1>Выберите активную роль</h1>
+
+    <p>Вы вошли как:<strong>{{ user.name }}</strong> ({{ user.email }})</p>
 
     <form action="/select-role" method="post">
         {% for role in roles %}
@@ -139,10 +140,10 @@
             </div>
         {% endfor %}
 
-        <button type="submit">Continue</button>
+        <button type="submit">Продолжить</button>
     </form>
 
-    <a href="/logout" class="logout-link">Logout</a>
+    <a href="/logout" class="logout-link">Выйти</a>
 </div>
 
 </body>
