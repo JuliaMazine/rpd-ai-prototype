@@ -20,3 +20,37 @@ class Settings:
     max_upload_bytes: int = 5 * 1024 * 1024
 
 settings = Settings()
+
+
+@dataclass(frozen=True)
+class GenerationSettings:
+    provider: str
+    model: str
+    base_url: str
+    api_key: str = field(repr=False)
+    timeout: float
+    max_tokens: int
+    context_length: int
+
+    @classmethod
+    def from_environment(cls):
+        # Retain VseGPT as the default for existing installations.
+        provider = os.getenv("LLM_PROVIDER", "vsegpt").strip().lower()
+        if provider not in {"ollama", "vsegpt", "template"}:
+            raise ValueError("LLM_PROVIDER must be ollama, vsegpt or template")
+        timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "600" if provider == "ollama" else "90"))
+        max_tokens = int(os.getenv("LLM_MAX_TOKENS", "4500"))
+        context_length = int(os.getenv("OLLAMA_CONTEXT_LENGTH", "16384"))
+        if not 1 <= timeout <= 3600 or not 1 <= max_tokens <= 32768 or not 512 <= context_length <= 131072:
+            raise ValueError("Generation limits are out of range")
+        if provider == "ollama":
+            model = os.getenv("OLLAMA_MODEL", "").strip()
+            base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").strip().rstrip("/")
+            api_key = ""
+        else:
+            model = os.getenv("VSEGPT_MODEL", "").strip()
+            base_url = os.getenv("VSEGPT_BASE_URL", "https://api.vsegpt.ru/v1").strip().rstrip("/")
+            api_key = os.getenv("VSEGPT_API_KEY", "").strip()
+        if provider != "template" and not base_url.startswith(("http://", "https://")):
+            raise ValueError("Generation base URL must use HTTP or HTTPS")
+        return cls(provider, model, base_url, api_key, timeout, max_tokens, context_length)

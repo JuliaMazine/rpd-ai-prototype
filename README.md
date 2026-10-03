@@ -16,7 +16,7 @@ The app does **not** yet suggest competencies from a catalogue or verify that a 
 
 ## Local setup (development only)
 
-Requirements: Python 3.12, Docker with Compose for the included PostgreSQL service, and an optional VseGPT API account for AI generation. Run commands from the repository root inside WSL/Linux.
+Requirements: Python 3.12, Docker with Compose for PostgreSQL, and either local Ollama or an optional VseGPT API account for AI generation. Run commands from the repository root inside WSL/Linux.
 
 ```bash
 docker compose up -d db
@@ -45,7 +45,7 @@ python -m app.migrate
 python -m uvicorn app.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000`. An empty API key/model uses a static fallback draft rather than AI generation. The app creates its database tables on startup; run `python -m app.migrate` before startup to add the course metadata columns to an existing database. This additive upgrade is idempotent and preserves existing records; back up any shared database before upgrading. It is a prototype upgrade utility, not a general migration framework. Demo seeding is disabled by default; `SEED_DEMO_DATA=true` enables demo users with known passwords—**do not expose this configuration to the internet or use it with real student/teacher data**.
+Open `http://127.0.0.1:8000`. Without a configured model/provider, a static fallback draft is used instead of AI generation. The app creates its database tables on startup; run `python -m app.migrate` before startup to add the course metadata columns to an existing database. This additive upgrade is idempotent and preserves existing records; back up any shared database before upgrading. It is a prototype upgrade utility, not a general migration framework. Demo seeding is disabled by default; `SEED_DEMO_DATA=true` enables demo users with known passwords—**do not expose this configuration to the internet or use it with real student/teacher data**.
 
 ## Tests
 
@@ -78,3 +78,27 @@ Course metadata is optional so older courses remain usable. Semester accepts int
 The interface, field hints, review status labels, and draft generation use Russian. The topics field asks what students will study and accepts one topic per line.
 
 PDF extraction reads the document text layer; image-only scans require OCR before upload. Password-protected PDFs and unreadable documents are rejected. DOCX extraction includes paragraphs and tables in document order; images, headers, footers, and text boxes are not extracted. Save older `.doc` files as `.docx` before uploading. Extracted text feeds the existing draft-generation flow; original files are retained.
+
+## Local generation with Ollama
+
+Install [Ollama](https://ollama.com/download), start its server (`ollama serve` if it is not already running), and download a local model:
+
+```bash
+ollama pull qwen3:4b
+ollama list
+```
+
+Set these values in the ignored `.env` file and restart the app:
+
+```dotenv
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen3:4b
+OLLAMA_CONTEXT_LENGTH=16384
+LLM_TIMEOUT_SECONDS=600
+LLM_MAX_TOKENS=4500
+```
+
+Local generation uses Ollama's native `/api/chat` endpoint and needs no API key. It runs on the machine hosting the app; models must be downloaded there. Initial model loading and CPU generation may take several minutes. This setup disables thinking output and reserves a 16K context window for the prompt and answer. Set the timeout (1–3600 seconds), output limit (1–32768 tokens), and context length (512–131072 tokens) for the model and available memory. The current materials prompt is limited to 16,000 characters. Increase context if longer prompts or answers require it; this increases memory use.
+
+Use `LLM_PROVIDER=vsegpt` with the existing `VSEGPT_*` settings to use the external service, or `LLM_PROVIDER=template` to disable AI requests. Existing installations without `LLM_PROVIDER` retain VseGPT behavior. If the server is unavailable, the model is missing, the request times out, or the response is empty, the app returns a clearly marked template draft. Responses cut short by the output limit are marked for completeness review. No automatic switch to a paid service occurs.

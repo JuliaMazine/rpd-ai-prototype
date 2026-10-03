@@ -223,7 +223,7 @@
                 <p class="empty">Черновики РПД создаются на русском языке.</p>
 
                 {% if course.materials %}
-                    <div class="hint">Создание может занять около минуты. Если API не настроен, используется шаблонный черновик.</div>
+                    <div class="hint">{{ generation_label }}. {{ generation_hint }}</div>
 
                     <form action="/ui/courses/{{ course.id }}/generate-draft" method="post">
                         <button type="submit">Создать черновик РПД</button>

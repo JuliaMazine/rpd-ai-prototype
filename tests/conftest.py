@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 os.environ["VSEGPT_API_KEY"] = ""
 os.environ["VSEGPT_MODEL"] = ""
+os.environ["LLM_PROVIDER"] = "vsegpt"
 
 from app.database import Base, get_db
 from app.main import app

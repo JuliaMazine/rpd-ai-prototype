@@ -11,6 +11,7 @@ from app.constants import (
 )
 from app.database import get_db
 from app.models import Course, CourseTeacher, Draft
+from app.config import GenerationSettings
 from app.services.course_service import ASSESSMENT_LABELS
 
 
@@ -65,6 +66,21 @@ def dashboard(
             .all()
         )
 
+    try:
+        generation = GenerationSettings.from_environment()
+        if generation.provider == "ollama":
+            generation_hint = "Генерация выполняется локально. На CPU это может занять несколько минут."
+            generation_label = "Локальная модель: " + (generation.model or "не выбрана")
+        elif generation.provider == "vsegpt":
+            generation_hint = "Используется внешний сервис генерации. Если он недоступен, будет создан шаблонный черновик."
+            generation_label = "VseGPT"
+        else:
+            generation_hint = "Будет создан шаблонный черновик без генерации ИИ."
+            generation_label = "Шаблон"
+    except (ValueError, TypeError):
+        generation_label = "Шаблон"
+        generation_hint = "Проверьте настройки генерации. Будет создан шаблонный черновик."
+
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
@@ -76,6 +92,8 @@ def dashboard(
             "role_teacher": ROLE_TEACHER,
             "role_methodist": ROLE_METHODIST,
             "courses": courses,
+            "generation_label": generation_label,
+            "generation_hint": generation_hint,
             "assessment_labels": ASSESSMENT_LABELS,
             "inbox_drafts": inbox_drafts,
         },

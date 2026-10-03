@@ -1,8 +1,12 @@
-import os
+import logging
+
+import httpx
 
 from openai import OpenAI
 
 from app.models import Course
+from app.config import GenerationSettings
+from app.services import ollama_service
 from app.services.course_service import ASSESSMENT_LABELS
 
 
@@ -285,62 +289,57 @@ def build_rpd_prompt(course: Course, materials_text: str) -> str:
 """.strip()
 
 
+logger = logging.getLogger(__name__)
+
+
 def generate_draft_text(course: Course, materials_text: str) -> str:
     fallback_draft = build_template_draft(course, materials_text)
 
-    api_key = os.getenv("VSEGPT_API_KEY", "").strip()
-    model = os.getenv("VSEGPT_MODEL", "").strip()
-    base_url = os.getenv("VSEGPT_BASE_URL", "https://api.vsegpt.ru/v1").strip()
-
-    if not api_key or not model:
-        return (
-            fallback_draft
-            + "\n\n"
-            + "[Служебное примечание: VseGPT не использовался, потому что VSEGPT_API_KEY или VSEGPT_MODEL отсутствует в .env.]"
-        )
-
-    prompt = build_rpd_prompt(course, materials_text)
+    def fallback(reason):
+        return fallback_draft + "\n\n[Служебное примечание: " + reason + "]"
 
     try:
-        client = OpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            timeout=90.0,
-        )
+        config = GenerationSettings.from_environment()
+    except (ValueError, TypeError):
+        return fallback("ошибка настройки генерации; использован шаблонный черновик.")
 
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Ты составляешь официальные рабочие программы дисциплин "
-                        "для российского университета. Ответ всегда на русском языке."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
-            ],
-            temperature=0.15,
-            max_tokens=4500,
-        )
+    if config.provider == "template":
+        return fallback("генерация ИИ отключена; использован шаблонный черновик.")
+    if config.provider == "ollama" and not config.model:
+        return fallback("Ollama не использовалась: локальная модель не выбрана; использован шаблонный черновик.")
+    if config.provider == "vsegpt" and (not config.api_key or not config.model):
+        return fallback("VseGPT не использовался, потому что VSEGPT_API_KEY или VSEGPT_MODEL отсутствует в .env.")
 
-        generated_text = response.choices[0].message.content
-
+    messages = [
+        {"role": "system", "content": "Ты составляешь официальные рабочие программы дисциплин для российского университета. Ответ всегда на русском языке."},
+        {"role": "user", "content": build_rpd_prompt(course, materials_text)},
+    ]
+    provider_label = "Ollama" if config.provider == "ollama" else "VseGPT"
+    try:
+        if config.provider == "ollama":
+            generated_text, truncated = ollama_service.generate(config, messages)
+        else:
+            with OpenAI(api_key=config.api_key, base_url=config.base_url, timeout=config.timeout, max_retries=0) as client:
+                response = client.chat.completions.create(
+                    model=config.model, messages=messages, temperature=0.15, max_tokens=config.max_tokens,
+                )
+                generated_text = response.choices[0].message.content
+                truncated = response.choices[0].finish_reason == "length"
         if generated_text and generated_text.strip():
-            return generated_text.strip()
-
-        return (
-            fallback_draft
-            + "\n\n"
-            + "[Служебное примечание: VseGPT вернул пустой ответ, поэтому использован шаблонный черновик.]"
-        )
-
-    except Exception as error:
-        return (
-            fallback_draft
-            + "\n\n"
-            + f"[Служебное примечание: генерация через VseGPT не удалась, поэтому использован шаблонный черновик. Ошибка: {error}]"
-        )
+            result = generated_text.strip()
+            if truncated:
+                result += "\n\n[Служебное примечание: достигнут лимит длины ответа. Проверьте полноту черновика.]"
+            return result
+        return fallback(f"{provider_label} вернул пустой ответ; использован шаблонный черновик.")
+    except httpx.TimeoutException:
+        return fallback("Ollama не завершила генерацию за отведенное время; использован шаблонный черновик.")
+    except httpx.ConnectError:
+        return fallback("не удалось подключиться к Ollama. Проверьте, что сервер запущен; использован шаблонный черновик.")
+    except httpx.HTTPStatusError as error:
+        if config.provider == "ollama" and error.response.status_code == 404:
+            return fallback("локальная модель Ollama не найдена. Сначала загрузите выбранную модель; использован шаблонный черновик.")
+        return fallback(f"{provider_label} отклонил запрос; использован шаблонный черновик.")
+    except Exception:
+        # Never embed credentials, transport payloads or raw API errors in an exported draft.
+        logger.warning("Draft generation failed with provider %s", config.provider)
+        return fallback(f"генерация через {provider_label} не удалась; использован шаблонный черновик.")
