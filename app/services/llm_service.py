@@ -8,6 +8,7 @@ from app.models import Course
 from app.config import GenerationSettings
 from app.services import ollama_service
 from app.services.course_service import ASSESSMENT_LABELS
+from app.services.rpd_content_service import TeachingContent, content_prompt, parse_content, render_content
 
 
 def course_metadata_text(course: Course) -> str:
@@ -46,7 +47,7 @@ ____________________ /____________________/
 
 образовательная программа: {course.educational_program or "уточняется"}
 направленность (профиль): _______________________________
-форма обучения: очная
+форма обучения: уточняется
 
 
 
@@ -67,11 +68,7 @@ _______________________________        _______________
 
 Дисциплина опирается на ранее освоенные материалы образовательной программы и может использоваться при дальнейшем изучении профильных дисциплин, выполнении проектных, исследовательских и выпускных квалификационных работ.
 
-Дисциплина направлена на формирование следующих компетенций:
-ОПК-1. Способен применять фундаментальные знания в профессиональной деятельности.
-ОПК-3. Способен разрабатывать и анализировать модели, применять методы моделирования и анализа в профессиональной деятельности.
-
-Перечень основных разделов дисциплины:
+Коды компетенций не назначены: каталог компетенций пока не подключен.\n\nПеречень основных разделов дисциплины:
 {course.topics or "уточняется"}
 
 Преподавание дисциплины предусматривает следующие виды учебной работы: лекции, практические занятия, самостоятельная работа, консультации.
@@ -272,7 +269,9 @@ def build_rpd_prompt(course: Course, materials_text: str) -> str:
 - Не выдумывай ФИО преподавателей, факультет, направление подготовки, год и точные коды компетенций, если их нет в материалах.
 - Если в материалах есть конкретные темы, задания, формы контроля, литература — используй их.
 - Не вставляй служебные объяснения о том, что ты ИИ.
-- Верни только текст черновика РПД.
+- Верни только текст черновика РПД, без рассуждений, плана ответа и комментариев.
+- Не используй Markdown-разметку: звездочки для заголовков, символы | для таблиц или блоки кода.
+- Неуказанные факультет, профиль, форма обучения, авторы, место в учебном плане, литература и шкала оценивания должны быть обозначены «уточняется». Не подставляй типичные или предполагаемые значения.
 
 Название дисциплины:
 {course.title}
@@ -310,26 +309,31 @@ def generate_draft_text(course: Course, materials_text: str) -> str:
     if config.provider == "vsegpt" and (not config.api_key or not config.model):
         return fallback("VseGPT не использовался, потому что VSEGPT_API_KEY или VSEGPT_MODEL отсутствует в .env.")
 
+    prompt, source_names = content_prompt(course, materials_text)
     messages = [
         {"role": "system", "content": "Ты составляешь официальные рабочие программы дисциплин для российского университета. Ответ всегда на русском языке."},
-        {"role": "user", "content": build_rpd_prompt(course, materials_text)},
+        {"role": "user", "content": prompt},
     ]
     provider_label = "Ollama" if config.provider == "ollama" else "VseGPT"
     try:
         if config.provider == "ollama":
-            generated_text, truncated = ollama_service.generate(config, messages)
+            generated_text, truncated = ollama_service.generate(config, messages, response_schema=TeachingContent.model_json_schema())
         else:
             with OpenAI(api_key=config.api_key, base_url=config.base_url, timeout=config.timeout, max_retries=0) as client:
                 response = client.chat.completions.create(
                     model=config.model, messages=messages, temperature=0.15, max_tokens=config.max_tokens,
+                    response_format={"type": "json_object"},
                 )
                 generated_text = response.choices[0].message.content
                 truncated = response.choices[0].finish_reason == "length"
+        if truncated:
+            return fallback("достигнут лимит длины ответа; неполный ответ модели отклонен. Использован шаблонный черновик.")
         if generated_text and generated_text.strip():
-            result = generated_text.strip()
-            if truncated:
-                result += "\n\n[Служебное примечание: достигнут лимит длины ответа. Проверьте полноту черновика.]"
-            return result
+            try:
+                content = parse_content(generated_text, source_names)
+            except ValueError:
+                return fallback("модель вернула неполные или некорректные учебные разделы; использован шаблонный черновик.")
+            return render_content(course, content, source_names)
         return fallback(f"{provider_label} вернул пустой ответ; использован шаблонный черновик.")
     except httpx.TimeoutException:
         return fallback("Ollama не завершила генерацию за отведенное время; использован шаблонный черновик.")

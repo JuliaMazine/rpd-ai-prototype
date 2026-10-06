@@ -10,6 +10,12 @@ APP_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = APP_DIR.parent
 load_dotenv(PROJECT_DIR / '.env')
 
+def upload_limit_bytes():
+    limit_mb = int(os.getenv("MAX_UPLOAD_MB", "25"))
+    if not 1 <= limit_mb <= 100:
+        raise ValueError("MAX_UPLOAD_MB must be an integer between 1 and 100")
+    return limit_mb * 1024 * 1024
+
 @dataclass(frozen=True)
 class Settings:
     database_url: str = field(default_factory=lambda: os.getenv('DATABASE_URL', ''))
@@ -17,7 +23,7 @@ class Settings:
     seed_demo: bool = field(default_factory=lambda: os.getenv('SEED_DEMO_DATA', 'false').lower() == 'true')
     secure_cookies: bool = field(default_factory=lambda: os.getenv('SECURE_COOKIES', 'false').lower() == 'true')
     upload_dir: Path = field(default_factory=lambda: Path(os.getenv('UPLOAD_DIR', str(PROJECT_DIR / 'uploads'))).resolve())
-    max_upload_bytes: int = 5 * 1024 * 1024
+    max_upload_bytes: int = field(default_factory=upload_limit_bytes)
 
 settings = Settings()
 

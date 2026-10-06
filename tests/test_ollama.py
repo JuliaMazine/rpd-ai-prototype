@@ -1,4 +1,5 @@
 from unittest.mock import Mock, patch
+import json
 
 import httpx
 import pytest
@@ -21,20 +22,23 @@ def test_local_provider_needs_no_api_key(local_settings):
     assert local_settings.base_url == "http://localhost:11434"
     assert local_settings.timeout == 600
 
-def test_ollama_receives_russian_prompt_and_returns_generated_text(local_settings, sample_course):
+def test_ollama_receives_russian_prompt_and_returns_generated_text(local_settings, sample_course, teaching_payload):
     response = Mock()
-    response.json.return_value = {"message": {"content": "  Черновик от локальной модели  "}, "done_reason": "stop"}
+    response.json.return_value = {"message": {"content": json.dumps(teaching_payload, ensure_ascii=False)}, "done_reason": "stop"}
     with patch("app.services.ollama_service.httpx.Client") as client, patch("app.services.llm_service.OpenAI") as paid_client:
         client.return_value.__enter__.return_value.post.return_value = response
         result = generate_draft_text(sample_course, "Материалы преподавателя")
-        assert result == "Черновик от локальной модели"
+        assert teaching_payload["objectives"][0] in result
+        assert "1. Цели освоения дисциплины" in result
         paid_client.assert_not_called()
         call = client.return_value.__enter__.return_value.post.call_args
         assert call.args[0] == "http://localhost:11434/api/chat"
         payload = call.kwargs["json"]
         assert payload["model"] == "qwen3:4b"
         assert payload["stream"] is False
+        assert "objectives" in payload["format"]["properties"]
         assert payload["think"] is False
+        assert payload["messages"][-1]["content"].endswith("/no_think")
         assert payload["options"]["num_ctx"] == 16384
         assert payload["options"]["num_predict"] == 4500
         assert "русском языке" in payload["messages"][0]["content"]
@@ -67,7 +71,8 @@ def test_empty_response_returns_fallback(local_settings, sample_course):
 def test_output_limit_is_visible(local_settings, sample_course):
     with patch("app.services.llm_service.ollama_service.generate", return_value=("Неполный ответ", True)):
         result = generate_draft_text(sample_course, "Материалы")
-        assert result.startswith("Неполный ответ")
+        assert "шаблонный черновик" in result
+        assert "Неполный ответ" not in result
         assert "достигнут лимит длины ответа" in result
 
 def test_template_provider_never_calls_a_model(monkeypatch, sample_course):
@@ -87,3 +92,24 @@ def test_empty_local_model_never_calls_server(local_settings, monkeypatch, sampl
     with patch("app.services.llm_service.ollama_service.generate") as local:
         assert "локальная модель не выбрана" in generate_draft_text(sample_course, "Материалы")
         local.assert_not_called()
+
+
+@pytest.mark.parametrize("content,expected", [
+    ("<think>Planning text</think>\nГотовый документ", "Готовый документ"),
+    ("Planning without opening tag</think>\nГотовый документ", "Готовый документ"),
+    ("<think>Unfinished planning", ""),
+    ("  Готовый документ  ", "Готовый документ"),
+])
+def test_only_final_answer_is_used(content, expected):
+    from app.services.ollama_service import final_answer
+    assert final_answer(content) == expected
+
+
+def test_planning_only_response_uses_template(local_settings, sample_course):
+    response = Mock()
+    response.json.return_value = {"message": {"content": "<think>Planning without final answer"}, "done_reason": "length"}
+    with patch("app.services.ollama_service.httpx.Client") as client:
+        client.return_value.__enter__.return_value.post.return_value = response
+        result = generate_draft_text(sample_course, "Материалы")
+        assert "шаблонный черновик" in result
+        assert "Planning" not in result

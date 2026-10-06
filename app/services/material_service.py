@@ -17,7 +17,7 @@ def save_material(db: Session, course_id: int, filename: str | None, content: by
     if not content:
         raise HTTPException(400, 'Uploaded file is empty')
     if len(content) > settings.max_upload_bytes:
-        raise HTTPException(413, 'Uploaded file exceeds the 5 MiB limit')
+        raise HTTPException(413, f"Размер файла превышает {settings.max_upload_bytes // (1024 * 1024)} МиБ.")
     text = extract_material_text(extension, content)
     directory = settings.upload_dir / f'course_{course_id}'
     directory.mkdir(parents=True, exist_ok=True)

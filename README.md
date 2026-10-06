@@ -8,7 +8,7 @@ This is a **prototype, not an approved or production-ready RPD system**. Generat
 
 - Teacher and methodist accounts, roles, dashboards, and a basic review flow.
 - Course creation and editing with a title, description, educational program, semester, workload, credits, assessment format, and topics.
-- Upload of UTF-8 `.txt`/`.md`, text-based `.pdf`, and Word `.docx` course materials; at least one upload is required before generation.
+- Upload of UTF-8 `.txt`/`.md`, text-based `.pdf`, Word `.docx`, Jupyter `.ipynb`, and PowerPoint `.pptx` course materials; at least one upload is required before generation.
 - RPD draft generation through a configured VseGPT-compatible API, with a static template fallback when it is unavailable.
 - Browser editing of draft text and DOCX download.
 
@@ -69,7 +69,7 @@ Review repository contents before sharing: `.env` is ignored, but some sample fi
 - `app/config.py`: environment settings and absolute project paths; `.env.example` lists supported settings.
 - `app/main.py`: app factory and startup lifecycle. Importing it does not create tables or seed users.
 
-Set a random persistent `SESSION_SECRET` (for example, generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"`). If omitted, a random secret is generated on each process start and existing sessions expire after restart. Use `SECURE_COOKIES=true` when serving over HTTPS. `UPLOAD_DIR` can override the default project upload folder. Uploads are limited to 5 MiB, validated and converted to text before writing, and stored using unique server-generated filenames.
+Set a random persistent `SESSION_SECRET` (for example, generate one with `python -c "import secrets; print(secrets.token_urlsafe(32))"`). If omitted, a random secret is generated on each process start and existing sessions expire after restart. Use `SECURE_COOKIES=true` when serving over HTTPS. `UPLOAD_DIR` can override the default project upload folder. Uploads are limited to 25 MiB by default (configure `MAX_UPLOAD_MB`, an integer from 1 to 100, then restart the app), validated and converted to text before writing, and stored using unique server-generated filenames.
 
 The existing prototype account policy still allows self-registration as a teacher or methodist and user management by any signed-in user. An administrator role and restricted registration require a separate access-policy change.
 
@@ -102,3 +102,12 @@ LLM_MAX_TOKENS=4500
 Local generation uses Ollama's native `/api/chat` endpoint and needs no API key. It runs on the machine hosting the app; models must be downloaded there. Initial model loading and CPU generation may take several minutes. This setup disables thinking output and reserves a 16K context window for the prompt and answer. Set the timeout (1–3600 seconds), output limit (1–32768 tokens), and context length (512–131072 tokens) for the model and available memory. The current materials prompt is limited to 16,000 characters. Increase context if longer prompts or answers require it; this increases memory use.
 
 Use `LLM_PROVIDER=vsegpt` with the existing `VSEGPT_*` settings to use the external service, or `LLM_PROVIDER=template` to disable AI requests. Existing installations without `LLM_PROVIDER` retain VseGPT behavior. If the server is unavailable, the model is missing, the request times out, or the response is empty, the app returns a clearly marked template draft. Responses cut short by the output limit are marked for completeness review. No automatic switch to a paid service occurs.
+
+Jupyter notebook extraction validates the notebook and reads Markdown, raw text, and code cell sources in cell order without executing them. Saved outputs, attachments, and images are excluded. PowerPoint extraction reads slide text, grouped shapes, and tables in slide order. Images, charts, and speaker notes are excluded. Save older `.ppt` presentations as `.pptx` before uploading. The same configurable upload limit applies to these formats.
+
+The displayed upload limit and rejection message follow `MAX_UPLOAD_MB`. Compressed Word/PowerPoint documents and PDF content streams have a separate 100 MiB expansion limit. Larger uploads do not increase the generation prompt budget: materials are still capped at 16,000 characters per request.
+
+
+RPD generation now requests structured teaching content and validates goals, learning outcomes, topic explanations, practical work, and assessment proposals before rendering the document. Administrative facts, workload, assessment format, and competency placeholders are rendered by the app. Every uploaded material gets part of the 16,000-character input budget, with excerpts spread over longer files. Source names are included with generated topics; these references do not independently verify factual correctness.
+
+Set `RPD_EXAMPLES_DIR` to a local folder of `.docx`, `.pdf`, `.txt`, or `.md` reference programs to guide style and detail. Up to two examples (files containing `пример` are prioritized) contribute short excerpts from sections 1, 3, and 5. They are explicitly separate from teaching sources and must not supply the new course's topics, workload, bibliography, or competency codes. Two owner-supplied examples are included in `references/rpd_examples`; set `RPD_EXAMPLES_DIR=references/rpd_examples` to use them, or choose another local folder. Relative paths resolve against the repository root. Changes to the selected files refresh the cached excerpts.

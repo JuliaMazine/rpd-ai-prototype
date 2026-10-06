@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -48,6 +48,9 @@ class Course(Base):
     educational_program = Column(String(255), nullable=True)
     semester = Column(Integer, nullable=True)
     total_hours = Column(Integer, nullable=True)
+    contact_hours = Column(Integer, nullable=True)
+    independent_hours = Column(Integer, nullable=True)
+    workload_confirmed = Column(Boolean, nullable=False, default=False, server_default="false")
     credits = Column(Numeric(5, 2), nullable=True)
     assessment_format = Column(String(50), nullable=True)
     topics = Column(Text, nullable=True)
@@ -81,6 +84,7 @@ class Draft(Base):
     feedback = Column(Text, nullable=True)
     status = Column(String(100), nullable=False, default="DRAFT_EDITING")
     document_url = Column(String(500), nullable=True)
+    generation_metadata = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 

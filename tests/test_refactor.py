@@ -38,7 +38,7 @@ def test_upload_paths_are_unique_and_stay_in_upload_directory(db_session, sample
     assert Path(second.file_path).read_bytes() == b"second"
 
 
-@pytest.mark.parametrize("content,status", [(b"", 400), (b"\xff", 400), (b"a" * (5 * 1024 * 1024 + 1), 413)], ids=["empty", "invalid-utf8", "oversized"])
+@pytest.mark.parametrize("content,status", [(b"", 400), (b"\xff", 400)], ids=["empty", "invalid-utf8"])
 def test_invalid_uploads_leave_no_files_or_rows(db_session, sample_course, tmp_path, content, status):
     with pytest.raises(HTTPException) as error:
         save_material(db_session, sample_course.id, "lecture.txt", content)
@@ -79,3 +79,36 @@ def test_draft_reader_rechecks_role_membership(db_session, sample_teacher, sampl
 def test_draft_reader_allows_real_methodist(db_session, sample_methodist, sample_draft):
     request = Request({"type": "http", "session": {"user_id": sample_methodist.id, "active_role": ROLE_METHODIST}})
     assert require_draft_reader(request, db_session, sample_draft.id).id == sample_draft.id
+
+
+def test_upload_above_old_limit_is_accepted(db_session, sample_course):
+    content = b"a" * (5 * 1024 * 1024 + 1)
+    material = save_material(db_session, sample_course.id, "large.txt", content)
+    assert len(material.extracted_text) == len(content)
+
+
+def test_upload_boundary_is_enforced(db_session, sample_course, tmp_path, monkeypatch):
+    from dataclasses import replace
+    from app.config import settings
+    monkeypatch.setattr("app.services.material_service.settings", replace(settings, upload_dir=tmp_path, max_upload_bytes=1024 * 1024))
+    material = save_material(db_session, sample_course.id, "at-limit.txt", b"a" * (1024 * 1024))
+    assert len(material.extracted_text) == 1024 * 1024
+    with pytest.raises(HTTPException) as error:
+        save_material(db_session, sample_course.id, "over-limit.txt", b"a" * (1024 * 1024 + 1))
+    assert error.value.status_code == 413
+    assert "1 МиБ" in error.value.detail
+    assert db_session.query(Material).count() == 1
+
+
+def test_upload_limit_is_configurable(monkeypatch):
+    from app.config import Settings
+    monkeypatch.setenv("MAX_UPLOAD_MB", "40")
+    assert Settings().max_upload_bytes == 40 * 1024 * 1024
+
+
+@pytest.mark.parametrize("value", ["0", "101", "invalid"])
+def test_invalid_upload_limit_is_rejected(monkeypatch, value):
+    from app.config import Settings
+    monkeypatch.setenv("MAX_UPLOAD_MB", value)
+    with pytest.raises(ValueError):
+        Settings()

@@ -11,7 +11,7 @@ from app.constants import (
 )
 from app.database import get_db
 from app.models import Course, CourseTeacher, Draft
-from app.config import GenerationSettings
+from app.config import GenerationSettings, settings
 from app.services.course_service import ASSESSMENT_LABELS
 
 
@@ -94,6 +94,7 @@ def dashboard(
             "courses": courses,
             "generation_label": generation_label,
             "generation_hint": generation_hint,
+            "max_upload_mb": settings.max_upload_bytes // (1024 * 1024),
             "assessment_labels": ASSESSMENT_LABELS,
             "inbox_drafts": inbox_drafts,
         },

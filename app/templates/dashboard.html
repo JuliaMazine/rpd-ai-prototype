@@ -213,9 +213,9 @@
                 {% endif %}
 
                 <form action="/ui/courses/{{ course.id }}/materials" method="post" enctype="multipart/form-data">
-                    <label>Загрузить материал (.txt, .md, .pdf или .docx)</label>
-                    <input type="file" name="file" accept=".txt,.md,.pdf,.docx" required>
-                    <p class="empty">До 5 МиБ. PDF должен содержать текст; сканы нужно предварительно распознать. Документы Word — в формате .docx.</p>
+                    <label>Загрузить материал (.txt, .md, .pdf, .docx, .ipynb или .pptx)</label>
+                    <input type="file" name="file" accept=".txt,.md,.pdf,.docx,.ipynb,.pptx" required>
+                    <p class="empty">До {{ max_upload_mb }} МиБ. PDF должен содержать текст; сканы нужно предварительно распознать. Документы Word — в формате .docx, презентации — .pptx. Из блокнотов .ipynb читаются текст и код без выполнения.</p>
                     <button type="submit">Загрузить материал</button>
                 </form>
 

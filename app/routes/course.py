@@ -94,7 +94,7 @@ def ui_generate_draft(
         )
 
     materials_text = "\n\n".join(
-        material.extracted_text or "" for material in course.materials
+        f"[Источник: {material.filename.replace(chr(10), chr(32))}]\n{material.extracted_text or chr(32)}" for material in course.materials
     )
 
     draft_content = generate_draft_text(course, materials_text)
