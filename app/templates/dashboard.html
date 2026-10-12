@@ -184,7 +184,9 @@
                 <p>
                     Программа: {{ course.educational_program or 'Уточняется' }} ·
                     Семестр: {{ course.semester or 'Уточняется' }} ·
-                    Часы: {{ course.total_hours or 'Уточняется' }} ·
+                    Часы: {{ course.total_hours or 'Уточняется' }}{% if course.total_hours and not course.workload_confirmed %} (назначение не подтверждено){% endif %} ·
+                    Контактные: {{ course.contact_hours if course.contact_hours is not none else 'Уточняется' }} ·
+                    Самостоятельные: {{ course.independent_hours if course.independent_hours is not none else 'Уточняется' }} ·
                     Зачетные единицы: {{ course.credits or 'Уточняется' }} ·
                     Аттестация: {{ assessment_labels.get(course.assessment_format, 'Уточняется') }}
                 </p>

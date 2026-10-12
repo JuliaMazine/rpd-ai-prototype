@@ -17,6 +17,7 @@ from app.constants import (
     TEACHER_EDITABLE_STATUSES,
 )
 from app.database import get_db
+from app.services.document_view_service import document_blocks
 from app.services.docx_service import (
     build_draft_docx,
     clean_filename,
@@ -50,6 +51,7 @@ def view_draft_page(
             "draft": draft,
             "active_role": active_role,
             "generation_review": review,
+            "document_blocks": document_blocks(draft.content),
         },
     )
 

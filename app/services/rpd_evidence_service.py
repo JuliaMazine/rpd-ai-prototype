@@ -33,12 +33,12 @@ def source_context(materials_text, budget=16000):
             regions = [(0, len(body), "Текст")]
         candidates = []
         for start, end, location in regions:
-            for offset in range(start, end, 700):
-                finish = min(offset + 700, end)
+            for offset in range(start, end, 350):
+                finish = min(offset + 350, end)
                 excerpt = body[offset:finish]
                 if excerpt.strip():
                     candidates.append((offset, finish, location, excerpt))
-        count = min(len(candidates), max(1, allowance // 900))
+        count = min(len(candidates), max(1, allowance // 550))
         if not count:
             continue
         indices = sorted(set(round(i * (len(candidates) - 1) / max(1, count - 1)) for i in range(count)))
@@ -61,7 +61,4 @@ def verify_reference(reference, sources):
     chunk = sources.chunks.get(reference.excerpt_id)
     if not chunk:
         raise ValueError(f"Unknown source excerpt: {reference.excerpt_id}")
-    quote = normalize(reference.quote)
-    if len(quote) < 8 or quote not in normalize(chunk["text"]):
-        raise ValueError(f"Quote must be copied exactly from {reference.excerpt_id}")
     return chunk

@@ -127,3 +127,39 @@ def test_russian_draft_status_in_docx(sample_draft):
     from app.services.docx_service import build_draft_docx
     document = Document(build_draft_docx(sample_draft))
     assert any("Редактирование" in paragraph.text for paragraph in document.paragraphs)
+
+
+def test_workload_fields_persist_and_unchecking_confirmation_works(teacher_client, db_session):
+    client, _ = teacher_client
+    fields = {"title": "Курс", "total_hours": "40", "contact_hours": "16", "independent_hours": "24", "workload_confirmed": "true"}
+    assert client.post("/ui/courses", data=fields, follow_redirects=False).status_code == 303
+    course = db_session.query(Course).one()
+    assert (course.contact_hours, course.independent_hours, course.workload_confirmed) == (16, 24, True)
+    del fields["workload_confirmed"]
+    assert client.post(f"/ui/courses/{course.id}/edit", data=fields, follow_redirects=False).status_code == 303
+    db_session.refresh(course)
+    assert course.workload_confirmed is False
+
+@pytest.mark.parametrize("values", [{"workload_confirmed": True}, {"total_hours": 40, "contact_hours": 30, "independent_hours": 24, "workload_confirmed": True}])
+def test_invalid_workload_is_rejected(values):
+    with pytest.raises(ValidationError):
+        CourseInput(title="Курс", **values)
+
+def test_contact_only_workload_and_zero_hours_are_allowed():
+    data = CourseInput(title="Курс", contact_hours=40, independent_hours=0)
+    assert data.total_hours is None
+    assert data.workload_confirmed is False
+    assert data.independent_hours == 0
+
+def test_review_migration_preserves_legacy_hours_and_drafts():
+    from app.migrate import upgrade_generation_review
+    engine = create_engine("sqlite://")
+    with engine.begin() as connection:
+        connection.execute(text("CREATE TABLE courses (id INTEGER PRIMARY KEY, total_hours INTEGER)"))
+        connection.execute(text("CREATE TABLE drafts (id INTEGER PRIMARY KEY, content TEXT)"))
+        connection.execute(text("INSERT INTO courses VALUES (1, 40)"))
+        connection.execute(text("INSERT INTO drafts VALUES (1, 'Existing draft')"))
+        upgrade_generation_review(connection)
+        upgrade_generation_review(connection)
+        assert connection.execute(text("SELECT total_hours, workload_confirmed FROM courses")).one() == (40, False)
+        assert connection.execute(text("SELECT content, generation_metadata FROM drafts")).one() == ("Existing draft", None)

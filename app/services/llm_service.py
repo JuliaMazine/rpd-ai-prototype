@@ -8,7 +8,7 @@ from app.models import Course
 from app.config import GenerationSettings
 from app.services import ollama_service
 from app.services.course_service import ASSESSMENT_LABELS
-from app.services.rpd_content_service import TeachingContent, content_prompt, parse_content, render_content, snapshot
+from app.services.rpd_content_service import TeachingContent, content_prompt, parse_content, render_content, snapshot, terminology_index
 
 
 def course_metadata_text(course: Course) -> str:
@@ -322,28 +322,39 @@ def generate_draft_text(course: Course, materials_text: str, metadata: dict | No
     ]
     provider_label = "Ollama" if config.provider == "ollama" else "VseGPT"
     try:
-        if config.provider == "ollama":
-            generated_text, truncated = ollama_service.generate(config, messages, response_schema=TeachingContent.model_json_schema())
-        else:
-            with OpenAI(api_key=config.api_key, base_url=config.base_url, timeout=config.timeout, max_retries=0) as client:
-                response = client.chat.completions.create(
-                    model=config.model, messages=messages, temperature=0.15, max_tokens=config.max_tokens,
-                    response_format={"type": "json_object"},
-                )
-                generated_text = response.choices[0].message.content
-                truncated = response.choices[0].finish_reason == "length"
-        if truncated:
-            return fallback("достигнут лимит длины ответа; неполный ответ модели отклонен. Использован шаблонный черновик.")
-        if generated_text and generated_text.strip():
+        for attempt in range(2):
+            if config.provider == "ollama":
+                generated_text, truncated = ollama_service.generate(config, messages, response_schema=TeachingContent.model_json_schema())
+            else:
+                with OpenAI(api_key=config.api_key, base_url=config.base_url, timeout=config.timeout, max_retries=0) as client:
+                    response = client.chat.completions.create(
+                        model=config.model, messages=messages, temperature=0.15, max_tokens=config.max_tokens,
+                        response_format={"type": "json_object"},
+                    )
+                    generated_text = response.choices[0].message.content
+                    truncated = response.choices[0].finish_reason == "length"
+            if truncated:
+                return fallback("достигнут лимит длины ответа; неполный ответ модели отклонен. Использован шаблонный черновик.")
+            if not generated_text or not generated_text.strip():
+                return fallback(f"{provider_label} вернул пустой ответ; использован шаблонный черновик.")
             try:
                 content = parse_content(generated_text, source_names)
-            except ValueError:
-                return fallback("модель вернула неполные или некорректные учебные разделы; использован шаблонный черновик.")
+            except ValueError as error:
+                if attempt:
+                    return fallback("модель вернула неполные или некорректные учебные разделы после повторной проверки; использован шаблонный черновик.")
+                if hasattr(error, "errors"):
+                    details = "; ".join(f"{item['loc']}: {item['msg']}" for item in error.errors())
+                else:
+                    details = str(error)
+                messages.extend([
+                    {"role": "assistant", "content": generated_text},
+                    {"role": "user", "content": "Исправь JSON после проверки: " + details[:1500] + "\nТочные ID для терминов:\n" + terminology_index(source_names) + "\nВерни полный JSON по исходной схеме. Выбирай только существующие excerpt_id из исходных материалов. Не добавляй quote или text. Каждая тема должна иметь summary и задание. topic_index должен ссылаться на существующую тему. dataset содержит kind и description; method — конкретный изучаемый метод. knowledge начинается с Знать."},
+                ])
+                continue
             if metadata is not None:
                 metadata.update(snapshot(course, content, source_names))
-                metadata["status"] = "validated"
+                metadata.update(status="validated", attempts=attempt + 1)
             return render_content(course, content, source_names)
-        return fallback(f"{provider_label} вернул пустой ответ; использован шаблонный черновик.")
     except httpx.TimeoutException:
         return fallback("Ollama не завершила генерацию за отведенное время; использован шаблонный черновик.")
     except httpx.ConnectError:

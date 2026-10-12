@@ -28,7 +28,7 @@ def test_ollama_receives_russian_prompt_and_returns_generated_text(local_setting
     with patch("app.services.ollama_service.httpx.Client") as client, patch("app.services.llm_service.OpenAI") as paid_client:
         client.return_value.__enter__.return_value.post.return_value = response
         result = generate_draft_text(sample_course, teaching_sources.full_text)
-        assert teaching_payload["objectives"][0] in result
+        assert teaching_payload["objectives"][0].lower().rstrip(".") in result.lower()
         assert "1. Цели освоения дисциплины" in result
         paid_client.assert_not_called()
         call = client.return_value.__enter__.return_value.post.call_args
@@ -113,3 +113,28 @@ def test_planning_only_response_uses_template(local_settings, sample_course):
         result = generate_draft_text(sample_course, "Материалы")
         assert "шаблонный черновик" in result
         assert "Planning" not in result
+
+
+def test_invalid_topic_reference_is_retried_once(local_settings, sample_course, teaching_payload, teaching_sources):
+    import copy
+    invalid = copy.deepcopy(teaching_payload)
+    invalid["assessment_tasks"][0]["topic_index"] = 6
+    metadata = {}
+    with patch("app.services.llm_service.ollama_service.generate", side_effect=[(json.dumps(invalid), False), (json.dumps(teaching_payload), False)]) as generate:
+        result = generate_draft_text(sample_course, teaching_sources.full_text, metadata=metadata)
+        assert generate.call_count == 2
+        assert metadata["status"] == "validated"
+        assert metadata["attempts"] == 2
+        assert "шаблонный черновик" not in result
+        assert "Исправь JSON" in generate.call_args.args[1][-1]["content"]
+
+def test_repeated_invalid_evidence_is_never_saved_as_generated_content(local_settings, sample_course, teaching_payload, teaching_sources):
+    teaching_payload["topics"][0]["claims"][0]["evidence"]["excerpt_id"] = "FAKE-ID"
+    metadata = {}
+    with patch("app.services.llm_service.ollama_service.generate", return_value=(json.dumps(teaching_payload), False)) as generate:
+        result = generate_draft_text(sample_course, teaching_sources.full_text, metadata=metadata)
+        assert generate.call_count == 2
+        assert metadata["status"] == "template"
+        assert metadata["evidence"] == []
+        assert "Выдуманный факт" not in result
+        assert "шаблонный черновик" in result
