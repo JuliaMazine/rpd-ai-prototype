@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -7,7 +9,7 @@ from app.constants import ROLE_TEACHER, STATUS_DRAFT_EDITING
 from app.database import get_db
 from app.models import Course, CourseTeacher, Draft
 from app.config import settings
-from app.services.material_service import save_material
+from app.services.material_service import save_material, generation_materials
 from app.services.llm_service import generate_draft_text
 from app.services.course_service import CourseInput, course_form
 
@@ -93,11 +95,9 @@ def ui_generate_draft(
             detail="Cannot generate draft: course has no uploaded materials",
         )
 
-    materials_text = "\n\n".join(
-        f"[Источник: {material.filename.replace(chr(10), chr(32))}]\n{material.extracted_text or chr(32)}" for material in course.materials
-    )
-
-    draft_content = generate_draft_text(course, materials_text)
+    materials_text = generation_materials(course.materials)
+    metadata = {}
+    draft_content = generate_draft_text(course, materials_text, metadata=metadata)
 
     draft_number = len(course.drafts) + 1
 
@@ -105,6 +105,7 @@ def ui_generate_draft(
         course_id=course.id,
         name=f"Черновик РПД v{draft_number} — {course.title}",
         content=draft_content,
+        generation_metadata=json.dumps(metadata, ensure_ascii=False),
         feedback=None,
         status=STATUS_DRAFT_EDITING,
         document_url=None,

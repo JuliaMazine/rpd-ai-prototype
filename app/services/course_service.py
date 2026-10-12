@@ -38,11 +38,11 @@ class CourseInput(BaseModel):
     @model_validator(mode="after")
     def check_workload(self):
         if self.workload_confirmed and self.total_hours is None:
-            raise ValueError("Confirmed total workload needs a total hours value")
+            raise ValueError("Укажите общую трудоемкость, прежде чем подтверждать ее назначение.")
         if self.total_hours is not None and self.workload_confirmed:
             parts = (self.contact_hours or 0) + (self.independent_hours or 0)
             if parts > self.total_hours:
-                raise ValueError("Contact and independent hours exceed total workload")
+                raise ValueError("Сумма контактных часов и самостоятельной работы превышает общую трудоемкость.")
         return self
 
 async def course_form(request: Request) -> CourseInput:
@@ -52,6 +52,6 @@ async def course_form(request: Request) -> CourseInput:
         return CourseInput.model_validate(values)
     except ValidationError as error:
         raise HTTPException(422, [
-            {"field": item["loc"][0] if item["loc"] else "workload", "message": "Проверьте значение поля: оно должно соответствовать допустимому типу и диапазону."}
+            {"field": item["loc"][0] if item["loc"] else "workload", "message": str(item["ctx"]["error"]) if not item["loc"] else "Проверьте значение поля: оно должно соответствовать допустимому типу и диапазону."}
             for item in error.errors()
         ]) from None

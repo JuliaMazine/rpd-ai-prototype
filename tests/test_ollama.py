@@ -22,12 +22,12 @@ def test_local_provider_needs_no_api_key(local_settings):
     assert local_settings.base_url == "http://localhost:11434"
     assert local_settings.timeout == 600
 
-def test_ollama_receives_russian_prompt_and_returns_generated_text(local_settings, sample_course, teaching_payload):
+def test_ollama_receives_russian_prompt_and_returns_generated_text(local_settings, sample_course, teaching_payload, teaching_sources):
     response = Mock()
     response.json.return_value = {"message": {"content": json.dumps(teaching_payload, ensure_ascii=False)}, "done_reason": "stop"}
     with patch("app.services.ollama_service.httpx.Client") as client, patch("app.services.llm_service.OpenAI") as paid_client:
         client.return_value.__enter__.return_value.post.return_value = response
-        result = generate_draft_text(sample_course, "Материалы преподавателя")
+        result = generate_draft_text(sample_course, teaching_sources.full_text)
         assert teaching_payload["objectives"][0] in result
         assert "1. Цели освоения дисциплины" in result
         paid_client.assert_not_called()

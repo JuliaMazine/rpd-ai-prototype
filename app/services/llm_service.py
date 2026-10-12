@@ -8,14 +8,16 @@ from app.models import Course
 from app.config import GenerationSettings
 from app.services import ollama_service
 from app.services.course_service import ASSESSMENT_LABELS
-from app.services.rpd_content_service import TeachingContent, content_prompt, parse_content, render_content
+from app.services.rpd_content_service import TeachingContent, content_prompt, parse_content, render_content, snapshot
 
 
 def course_metadata_text(course: Course) -> str:
     return "\n".join([
         f"Образовательная программа: {course.educational_program or 'уточняется'}",
         f"Семестр: {course.semester or 'уточняется'}",
-        f"Общая трудоемкость, академических часов: {course.total_hours or 'уточняется'}",
+        f"Академические часы: {course.total_hours or 'уточняется'} ({'общая трудоемкость подтверждена' if course.workload_confirmed else 'назначение часов не подтверждено'})",
+        f"Контактные часы: {course.contact_hours if course.contact_hours is not None else 'уточняются'}",
+        f"Самостоятельная работа, часов: {course.independent_hours if course.independent_hours is not None else 'уточняется'}",
         f"Зачетные единицы: {course.credits if course.credits is not None else 'уточняется'}",
         f"Форма промежуточной аттестации: {ASSESSMENT_LABELS.get(course.assessment_format, 'уточняется')}",
         f"Темы / разделы дисциплины:\n{course.topics or 'уточняются'}",
@@ -73,7 +75,9 @@ _______________________________        _______________
 
 Преподавание дисциплины предусматривает следующие виды учебной работы: лекции, практические занятия, самостоятельная работа, консультации.
 
-Общая трудоемкость дисциплины: {course.credits if course.credits is not None else "уточняется"} з.е.; {course.total_hours or "уточняется"} академических часов.
+Зачетные единицы: {course.credits if course.credits is not None else "уточняются"}.
+Указанные академические часы: {course.total_hours or "уточняются"}.
+Назначение часов: {"общая трудоемкость подтверждена" if course.workload_confirmed else "требует подтверждения преподавателем"}.
 
 
 
@@ -291,10 +295,12 @@ def build_rpd_prompt(course: Course, materials_text: str) -> str:
 logger = logging.getLogger(__name__)
 
 
-def generate_draft_text(course: Course, materials_text: str) -> str:
+def generate_draft_text(course: Course, materials_text: str, metadata: dict | None = None) -> str:
     fallback_draft = build_template_draft(course, materials_text)
 
     def fallback(reason):
+        if metadata is not None:
+            metadata.update({"version": 1, "status": "template", "warnings": [reason], "evidence": []})
         return fallback_draft + "\n\n[Служебное примечание: " + reason + "]"
 
     try:
@@ -333,6 +339,9 @@ def generate_draft_text(course: Course, materials_text: str) -> str:
                 content = parse_content(generated_text, source_names)
             except ValueError:
                 return fallback("модель вернула неполные или некорректные учебные разделы; использован шаблонный черновик.")
+            if metadata is not None:
+                metadata.update(snapshot(course, content, source_names))
+                metadata["status"] = "validated"
             return render_content(course, content, source_names)
         return fallback(f"{provider_label} вернул пустой ответ; использован шаблонный черновик.")
     except httpx.TimeoutException:

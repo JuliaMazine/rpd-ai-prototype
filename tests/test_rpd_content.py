@@ -16,18 +16,18 @@ def test_each_source_gets_input_budget_including_end_of_large_file():
 def test_prompt_requires_teaching_content_without_competency_codes(sample_course):
     prompt, names = content_prompt(sample_course, "Material concepts")
     assert "СФОРМУЛИРУЙ" in prompt
-    assert "коды компетенций" in prompt
+    assert "Коды компетенций" in prompt
     assert "Material concepts" in prompt
 
-def test_renderer_preserves_entered_facts_and_has_plain_headings(sample_course, teaching_payload):
+def test_renderer_preserves_entered_facts_and_has_plain_headings(sample_course, teaching_payload, teaching_sources):
     from decimal import Decimal
     sample_course.total_hours = 40
     sample_course.credits = Decimal("4")
     sample_course.assessment_format = "pass"
     teaching_payload["objectives"][0] = "**" + teaching_payload["objectives"][0] + "**"
-    content = parse_content(json.dumps(teaching_payload), ["lecture.pdf"])
-    result = render_content(sample_course, content, ["lecture.pdf"])
-    assert "Академические часы: 40" in result
+    content = parse_content(json.dumps(teaching_payload), teaching_sources)
+    result = render_content(sample_course, content, teaching_sources)
+    assert "Указанные академические часы: 40" in result
     assert "Зачетные единицы: 4" in result
     assert "Зачет" in result
     assert "Экзамен" not in result
@@ -35,30 +35,30 @@ def test_renderer_preserves_entered_facts_and_has_plain_headings(sample_course, 
     assert "Коды компетенций не назначены" in result
     assert "ОПК-1" not in result
     assert teaching_payload["objectives"][0].replace("**", "") in result
-    assert teaching_payload["assessment_tasks"][0]["task"] in result
-    assert teaching_payload["assessment_tasks"][0]["expected_result"] in result
-    assert "Основание: lecture.pdf" in result
+    assert teaching_payload["assessment_tasks"][0]["problem"] in result
+    assert "Таблица вычисленных метрик с формулами" in result
+    assert "Основание: S1E1" in result
 
 @pytest.mark.parametrize("field", ["objectives", "knowledge", "skills", "assessment_tasks"])
-def test_empty_teaching_sections_are_rejected(teaching_payload, field):
+def test_empty_teaching_sections_are_rejected(teaching_payload, teaching_sources, field):
     teaching_payload[field] = []
     with pytest.raises(ValueError):
-        parse_content(json.dumps(teaching_payload), ["lecture.pdf"])
+        parse_content(json.dumps(teaching_payload), teaching_sources)
 
-def test_placeholder_goals_are_rejected(teaching_payload):
+def test_placeholder_goals_are_rejected(teaching_payload, teaching_sources):
     teaching_payload["objectives"][0] = "уточняется преподавателем"
     with pytest.raises(ValueError):
-        parse_content(json.dumps(teaching_payload), ["lecture.pdf"])
+        parse_content(json.dumps(teaching_payload), teaching_sources)
 
-def test_unknown_source_references_are_rejected(teaching_payload):
-    teaching_payload["topics"][0]["source_ids"] = [3]
+def test_unknown_source_references_are_rejected(teaching_payload, teaching_sources):
+    teaching_payload["topics"][0]["claims"][0]["evidence"]["excerpt_id"] = "S3E1"
     with pytest.raises(ValueError):
-        parse_content(json.dumps(teaching_payload), ["lecture.pdf"])
+        parse_content(json.dumps(teaching_payload), teaching_sources)
 
-def test_generated_administrative_facts_are_rejected(teaching_payload):
+def test_generated_administrative_facts_are_rejected(teaching_payload, teaching_sources):
     teaching_payload["total_hours"] = 108
     with pytest.raises(ValueError):
-        parse_content(json.dumps(teaching_payload), ["lecture.pdf"])
+        parse_content(json.dumps(teaching_payload), teaching_sources)
 
 
 def test_reference_examples_are_separate_and_bounded(tmp_path, monkeypatch, sample_course):
@@ -91,13 +91,13 @@ def test_reference_examples_are_separate_and_bounded(tmp_path, monkeypatch, samp
     assert sources == ["Материалы преподавателя"]
 
 
-def test_model_cannot_supply_an_administrative_introduction(teaching_payload):
+def test_model_cannot_supply_an_administrative_introduction(teaching_payload, teaching_sources):
     teaching_payload["summary"] = "Чужая программа 01.04.01 из образца РПД"
     with pytest.raises(ValueError):
-        parse_content(json.dumps(teaching_payload), ["lecture.pdf"])
+        parse_content(json.dumps(teaching_payload), teaching_sources)
 
 
-def test_generic_assessment_tasks_without_expected_results_are_rejected(teaching_payload):
+def test_generic_assessment_tasks_without_expected_results_are_rejected(teaching_payload, teaching_sources):
     teaching_payload["assessment_tasks"] = ["Оценить качество модели"] * 3
     with pytest.raises(ValueError):
-        parse_content(json.dumps(teaching_payload), ["lecture.pdf"])
+        parse_content(json.dumps(teaching_payload), teaching_sources)

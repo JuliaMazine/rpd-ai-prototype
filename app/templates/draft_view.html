@@ -100,6 +100,23 @@
     </div>
 {% endif %}
 
+{% if generation_review %}
+<div class="card">
+    <h2>Проверка источников и полноты</h2>
+    {% if generation_review.edited %}<p>Текст изменен после генерации. Ниже показаны основания исходного черновика; правки требуют повторной проверки.</p>{% endif %}
+    {% for warning in generation_review.get('warnings', []) %}<p>{{ warning }}</p>{% endfor %}
+    {% if generation_review.get('evidence') %}
+    <p>Цитаты проверены на совпадение с материалами. Соответствие вывода цитате проверяет преподаватель.</p>
+    <details><summary>Показать основания тем и утверждений</summary>
+    {% for item in generation_review.evidence %}
+        <p><strong>{{ item.topic }}</strong>: {{ item.claim }}</p>
+        <blockquote>{{ item.quote }}</blockquote>
+        <p>{{ item.filename }} — {{ item.location }} ({{ item.id }})</p>
+    {% endfor %}
+    </details>
+    {% endif %}
+</div>
+{% endif %}
 <div class="card">
     <h2>Содержание черновика</h2>
     <pre>{{ draft.content }}</pre>

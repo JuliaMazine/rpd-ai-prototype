@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from sqlalchemy.orm import Session
@@ -36,6 +38,10 @@ def view_draft_page(
 ):
     draft = require_draft_reader(request, db, draft_id)
     active_role = get_active_role(request)
+    try:
+        review = json.loads(draft.generation_metadata or "{}")
+    except (ValueError, TypeError):
+        review = {}
 
     return templates.TemplateResponse(
         request=request,
@@ -43,6 +49,7 @@ def view_draft_page(
         context={
             "draft": draft,
             "active_role": active_role,
+            "generation_review": review,
         },
     )
 
@@ -102,6 +109,13 @@ def ui_save_draft_edit(
         )
 
     draft.content = content
+    if draft.generation_metadata:
+        try:
+            review = json.loads(draft.generation_metadata)
+            review["edited"] = True
+            draft.generation_metadata = json.dumps(review, ensure_ascii=False)
+        except (ValueError, TypeError):
+            pass
 
     db.commit()
 
