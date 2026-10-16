@@ -19,7 +19,6 @@ RUSSIAN = {'Authorization failed': 'Неверная электронная по
  'Course not found': 'Дисциплина не найдена.',
  'Uploaded file is empty': 'Загруженный файл пуст.',
  'Filename is too long': 'Название файла слишком длинное.',
- 'Uploaded file exceeds the 5 MiB limit': 'Размер файла превышает 5 МиБ.',
  'Could not read file as UTF-8 text': 'Не удалось прочитать файл как текст UTF-8.',
  'Unsupported file type. Only .txt and .md are supported in the prototype.': 'В прототипе '
                                                                              'поддерживаются '

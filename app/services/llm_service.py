@@ -1,16 +1,23 @@
-import os
+import logging
+
+import httpx
 
 from openai import OpenAI
 
 from app.models import Course
+from app.config import GenerationSettings
+from app.services import ollama_service
 from app.services.course_service import ASSESSMENT_LABELS
+from app.services.rpd_content_service import TeachingContent, content_prompt, parse_content, render_content, snapshot, terminology_index
 
 
 def course_metadata_text(course: Course) -> str:
     return "\n".join([
         f"Образовательная программа: {course.educational_program or 'уточняется'}",
         f"Семестр: {course.semester or 'уточняется'}",
-        f"Общая трудоемкость, академических часов: {course.total_hours or 'уточняется'}",
+        f"Академические часы: {course.total_hours or 'уточняется'} ({'общая трудоемкость подтверждена' if course.workload_confirmed else 'назначение часов не подтверждено'})",
+        f"Контактные часы: {course.contact_hours if course.contact_hours is not None else 'уточняются'}",
+        f"Самостоятельная работа, часов: {course.independent_hours if course.independent_hours is not None else 'уточняется'}",
         f"Зачетные единицы: {course.credits if course.credits is not None else 'уточняется'}",
         f"Форма промежуточной аттестации: {ASSESSMENT_LABELS.get(course.assessment_format, 'уточняется')}",
         f"Темы / разделы дисциплины:\n{course.topics or 'уточняются'}",
@@ -42,7 +49,7 @@ ____________________ /____________________/
 
 образовательная программа: {course.educational_program or "уточняется"}
 направленность (профиль): _______________________________
-форма обучения: очная
+форма обучения: уточняется
 
 
 
@@ -63,16 +70,14 @@ _______________________________        _______________
 
 Дисциплина опирается на ранее освоенные материалы образовательной программы и может использоваться при дальнейшем изучении профильных дисциплин, выполнении проектных, исследовательских и выпускных квалификационных работ.
 
-Дисциплина направлена на формирование следующих компетенций:
-ОПК-1. Способен применять фундаментальные знания в профессиональной деятельности.
-ОПК-3. Способен разрабатывать и анализировать модели, применять методы моделирования и анализа в профессиональной деятельности.
-
-Перечень основных разделов дисциплины:
+Коды компетенций не назначены: каталог компетенций пока не подключен.\n\nПеречень основных разделов дисциплины:
 {course.topics or "уточняется"}
 
 Преподавание дисциплины предусматривает следующие виды учебной работы: лекции, практические занятия, самостоятельная работа, консультации.
 
-Общая трудоемкость дисциплины: {course.credits if course.credits is not None else "уточняется"} з.е.; {course.total_hours or "уточняется"} академических часов.
+Зачетные единицы: {course.credits if course.credits is not None else "уточняются"}.
+Указанные академические часы: {course.total_hours or "уточняются"}.
+Назначение часов: {"общая трудоемкость подтверждена" if course.workload_confirmed else "требует подтверждения преподавателем"}.
 
 
 
@@ -268,7 +273,9 @@ def build_rpd_prompt(course: Course, materials_text: str) -> str:
 - Не выдумывай ФИО преподавателей, факультет, направление подготовки, год и точные коды компетенций, если их нет в материалах.
 - Если в материалах есть конкретные темы, задания, формы контроля, литература — используй их.
 - Не вставляй служебные объяснения о том, что ты ИИ.
-- Верни только текст черновика РПД.
+- Верни только текст черновика РПД, без рассуждений, плана ответа и комментариев.
+- Не используй Markdown-разметку: звездочки для заголовков, символы | для таблиц или блоки кода.
+- Неуказанные факультет, профиль, форма обучения, авторы, место в учебном плане, литература и шкала оценивания должны быть обозначены «уточняется». Не подставляй типичные или предполагаемые значения.
 
 Название дисциплины:
 {course.title}
@@ -285,62 +292,78 @@ def build_rpd_prompt(course: Course, materials_text: str) -> str:
 """.strip()
 
 
-def generate_draft_text(course: Course, materials_text: str) -> str:
+logger = logging.getLogger(__name__)
+
+
+def generate_draft_text(course: Course, materials_text: str, metadata: dict | None = None) -> str:
     fallback_draft = build_template_draft(course, materials_text)
 
-    api_key = os.getenv("VSEGPT_API_KEY", "").strip()
-    model = os.getenv("VSEGPT_MODEL", "").strip()
-    base_url = os.getenv("VSEGPT_BASE_URL", "https://api.vsegpt.ru/v1").strip()
-
-    if not api_key or not model:
-        return (
-            fallback_draft
-            + "\n\n"
-            + "[Служебное примечание: VseGPT не использовался, потому что VSEGPT_API_KEY или VSEGPT_MODEL отсутствует в .env.]"
-        )
-
-    prompt = build_rpd_prompt(course, materials_text)
+    def fallback(reason):
+        if metadata is not None:
+            metadata.update({"version": 1, "status": "template", "warnings": [reason], "evidence": []})
+        return fallback_draft + "\n\n[Служебное примечание: " + reason + "]"
 
     try:
-        client = OpenAI(
-            api_key=api_key,
-            base_url=base_url,
-            timeout=90.0,
-        )
+        config = GenerationSettings.from_environment()
+    except (ValueError, TypeError):
+        return fallback("ошибка настройки генерации; использован шаблонный черновик.")
 
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Ты составляешь официальные рабочие программы дисциплин "
-                        "для российского университета. Ответ всегда на русском языке."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": prompt,
-                },
-            ],
-            temperature=0.15,
-            max_tokens=4500,
-        )
+    if config.provider == "template":
+        return fallback("генерация ИИ отключена; использован шаблонный черновик.")
+    if config.provider == "ollama" and not config.model:
+        return fallback("Ollama не использовалась: локальная модель не выбрана; использован шаблонный черновик.")
+    if config.provider == "vsegpt" and (not config.api_key or not config.model):
+        return fallback("VseGPT не использовался, потому что VSEGPT_API_KEY или VSEGPT_MODEL отсутствует в .env.")
 
-        generated_text = response.choices[0].message.content
-
-        if generated_text and generated_text.strip():
-            return generated_text.strip()
-
-        return (
-            fallback_draft
-            + "\n\n"
-            + "[Служебное примечание: VseGPT вернул пустой ответ, поэтому использован шаблонный черновик.]"
-        )
-
-    except Exception as error:
-        return (
-            fallback_draft
-            + "\n\n"
-            + f"[Служебное примечание: генерация через VseGPT не удалась, поэтому использован шаблонный черновик. Ошибка: {error}]"
-        )
+    prompt, source_names = content_prompt(course, materials_text)
+    messages = [
+        {"role": "system", "content": "Ты составляешь официальные рабочие программы дисциплин для российского университета. Ответ всегда на русском языке."},
+        {"role": "user", "content": prompt},
+    ]
+    provider_label = "Ollama" if config.provider == "ollama" else "VseGPT"
+    try:
+        for attempt in range(2):
+            if config.provider == "ollama":
+                generated_text, truncated = ollama_service.generate(config, messages, response_schema=TeachingContent.model_json_schema())
+            else:
+                with OpenAI(api_key=config.api_key, base_url=config.base_url, timeout=config.timeout, max_retries=0) as client:
+                    response = client.chat.completions.create(
+                        model=config.model, messages=messages, temperature=0.15, max_tokens=config.max_tokens,
+                        response_format={"type": "json_object"},
+                    )
+                    generated_text = response.choices[0].message.content
+                    truncated = response.choices[0].finish_reason == "length"
+            if truncated:
+                return fallback("достигнут лимит длины ответа; неполный ответ модели отклонен. Использован шаблонный черновик.")
+            if not generated_text or not generated_text.strip():
+                return fallback(f"{provider_label} вернул пустой ответ; использован шаблонный черновик.")
+            try:
+                content = parse_content(generated_text, source_names)
+            except ValueError as error:
+                if attempt:
+                    return fallback("модель вернула неполные или некорректные учебные разделы после повторной проверки; использован шаблонный черновик.")
+                if hasattr(error, "errors"):
+                    details = "; ".join(f"{item['loc']}: {item['msg']}" for item in error.errors())
+                else:
+                    details = str(error)
+                messages.extend([
+                    {"role": "assistant", "content": generated_text},
+                    {"role": "user", "content": "Исправь JSON после проверки: " + details[:1500] + "\nТочные ID для терминов:\n" + terminology_index(source_names) + "\nВерни полный JSON по исходной схеме. Выбирай только существующие excerpt_id из исходных материалов. Не добавляй quote или text. Каждая тема должна иметь summary и задание. topic_index должен ссылаться на существующую тему. dataset содержит kind и description; method — конкретный изучаемый метод. knowledge начинается с Знать."},
+                ])
+                continue
+            if metadata is not None:
+                metadata.update(snapshot(course, content, source_names))
+                metadata.update(status="validated", attempts=attempt + 1)
+            return render_content(course, content, source_names)
+    except httpx.TimeoutException:
+        return fallback("Ollama не завершила генерацию за отведенное время; использован шаблонный черновик.")
+    except httpx.ConnectError:
+        return fallback("не удалось подключиться к Ollama. Проверьте, что сервер запущен; использован шаблонный черновик.")
+    except httpx.HTTPStatusError as error:
+        if config.provider == "ollama" and error.response.status_code == 404:
+            return fallback("локальная модель Ollama не найдена. Сначала загрузите выбранную модель; использован шаблонный черновик.")
+        return fallback(f"{provider_label} отклонил запрос; использован шаблонный черновик.")
+    except Exception:
+        # Never embed credentials, transport payloads or raw API errors in an exported draft.
+        logger.warning("Draft generation failed with provider %s", config.provider)
+        return fallback(f"генерация через {provider_label} не удалась; использован шаблонный черновик.")

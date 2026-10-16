@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 os.environ["VSEGPT_API_KEY"] = ""
 os.environ["VSEGPT_MODEL"] = ""
+os.environ["LLM_PROVIDER"] = "vsegpt"
 
 from app.database import Base, get_db
 from app.main import app
@@ -206,3 +207,30 @@ def isolated_uploads(tmp_path, monkeypatch):
     from dataclasses import replace
     from app.config import settings
     monkeypatch.setattr("app.services.material_service.settings", replace(settings, upload_dir=tmp_path))
+
+
+SOURCE_TEXT = "Предобработка включает заполнение пропущенных значений. Метрики классификации оценивают качество предсказаний."
+
+@pytest.fixture
+def teaching_sources():
+    from app.services.rpd_evidence_service import source_context
+    return source_context("[Источник: lecture.pdf]\nСтраница 1:\n" + SOURCE_TEXT)[1]
+
+@pytest.fixture
+def teaching_payload():
+    return {
+        "objectives": ["Применять методы обработки пропущенных значений.", "Объяснять результаты классификации на учебных данных.", "Обосновывать выбор преобразований признаков."],
+        "knowledge": ["Знать методы заполнения пропусков в данных.", "Знать определения метрик качества классификации.", "Знать принципы нормализации числовых признаков."],
+        "skills": ["Подготавливать набор данных для обучения модели.", "Вычислять метрики качества классификации.", "Сравнивать результаты преобразований признаков."],
+        "topics": [
+            {"title": "Предобработка данных", "summary": "Обработка пропущенных значений. Сравнение способов заполнения пропусков и подготовка данных.", "claims": [{"evidence": {"excerpt_id": "S1E1"}}]},
+            {"title": "Метрики классификации", "summary": "Оценка предсказаний классификатора. Вычисление метрик и интерпретация ошибок классификации.", "claims": [{"evidence": {"excerpt_id": "S1E1"}}]},
+        ],
+        "assessment_tasks": [{
+            "topic_index": topic,
+            "method": "метрики классификации",
+            "dataset": {"kind": "classification_predictions", "description": "Учебная таблица измерений с истинными метками классов и предсказаниями."},
+            "exercise_type": "evaluate_predictions",
+        } for topic in [1, 2, 2]],
+        "assessment_criteria": ["Корректность выбранного метода обработки данных.", "Правильность вычисления и интерпретации метрик.", "Обоснованность сравнения результатов эксперимента."],
+    }

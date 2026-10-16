@@ -101,6 +101,8 @@ class TestGenerateDraftText:
         assert "VseGPT не использовался" in result
 
     def test_returns_fallback_on_api_error(self, sample_course, monkeypatch):
+        from unittest.mock import Mock
+        monkeypatch.setattr("app.services.llm_service.OpenAI", Mock(side_effect=RuntimeError("API failure")))
         monkeypatch.setenv("VSEGPT_API_KEY", "sk-test-key")
         monkeypatch.setenv("VSEGPT_MODEL", "test-model")
         result = generate_draft_text(sample_course, "course materials text")

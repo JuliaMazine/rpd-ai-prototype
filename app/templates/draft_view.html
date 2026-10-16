@@ -59,6 +59,15 @@
             padding: 15px;
             white-space: pre-wrap;
         }
+        .rpd-document { max-width: 960px; margin: auto; padding: 28px; font-family: "Times New Roman", serif; font-size: 17px; line-height: 1.5; }
+        .rpd-document p { margin: 10px 0; }
+        .rpd-document h3 { font-size: 18px; margin-top: 32px; }
+        .rpd-title { text-align: center; margin: 40px 0 24px; }
+        .rpd-table-wrap { overflow-x: auto; margin: 20px 0; }
+        .rpd-table { border-collapse: collapse; width: 100%; font-size: 15px; }
+        .rpd-table th, .rpd-table td { border: 1px solid #777; padding: 8px; text-align: left; vertical-align: top; }
+        .rpd-table th { background: #f4f4f4; }
+        .rpd-bullet { padding-left: 20px; }
     </style>
     <link rel="stylesheet" href="/static/styles.css">
 </head>
@@ -100,9 +109,40 @@
     </div>
 {% endif %}
 
+{% if generation_review %}
+<div class="card">
+    <h2>Проверка источников и полноты</h2>
+    {% if generation_review.edited %}<p>Текст изменен после генерации. Ниже показаны основания исходного черновика; правки требуют повторной проверки.</p>{% endif %}
+    {% for warning in generation_review.get('warnings', []) %}<p>{{ warning }}</p>{% endfor %}
+    {% if generation_review.get('evidence') %}
+    <p>Выбранные фрагменты найдены в материалах. Формулировки проекта и методические дополнения проверяет преподаватель.</p>
+    <details><summary>Показать основания тем и утверждений</summary>
+    {% for item in generation_review.evidence %}
+        <p><strong>{{ item.topic }}</strong>: {{ item.claim }}</p>
+        <blockquote style="white-space: pre-wrap">{{ item.quote }}</blockquote>
+        <p>{{ item.filename }} — {{ item.location }} ({{ item.id }})</p>
+    {% endfor %}
+    </details>
+    {% endif %}
+</div>
+{% endif %}
 <div class="card">
     <h2>Содержание черновика</h2>
-    <pre>{{ draft.content }}</pre>
+    <article class="rpd-document">
+    {% for block in document_blocks %}
+        {% if block.kind == 'table' %}
+        <div class="rpd-table-wrap"><table class="rpd-table">
+            <thead><tr>{% for cell in block.headers %}<th>{{ cell }}</th>{% endfor %}</tr></thead>
+            <tbody>{% for row in block.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+        </table></div>
+        {% elif block.kind == 'title' %}<h2 class="rpd-title">{{ block.text }}</h2>
+        {% elif block.kind == 'heading' %}<h3>{{ block.text }}</h3>
+        {% elif block.kind == 'subheading' %}<h4>{{ block.text }}</h4>
+        {% elif block.kind == 'bullet' %}<p class="rpd-bullet">• {{ block.text }}</p>
+        {% else %}<p>{{ block.text }}</p>
+        {% endif %}
+    {% endfor %}
+    </article>
 </div>
 
 </body>
