@@ -164,7 +164,7 @@ The review screen placed the draft content above the feedback form. Saving comme
 
 ![Current Russian course form with explicit workload fields](images/02-current-course-form.png)
 
-The current form adds educational program, semester, total/contact/independent hours and explicit workload confirmation. This screenshot shows the upper part of the longer form; credits, assessment, description and topics continue below.
+The course form brings program, semester, workload, credits, assessment format, description and topics together. The workload confirmation distinguishes total academic hours from contact hours, while the separate fields record contact and independent work.
 
 ### Figure 7 — Source-review evidence
 

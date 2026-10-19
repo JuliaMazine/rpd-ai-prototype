@@ -2,11 +2,13 @@
 
 Run from the repo root: .venv/bin/python docs/autumn-2026/capture_screenshots.py
 Writes HTML into /tmp/rpd-autumn-report.
+Add --html-only --capture-form to replace the course-form PNG as well.
 No application database, model server, or private uploads are used.
 """
 import json
 import ast
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -81,8 +83,12 @@ methodist_ctx = {**old_ctx, 'active_role':'USER_METHODIST', 'user_roles':['USER_
 save('09-baseline-methodist-inbox', env.from_string(old).render(**methodist_ctx), old_css)
 save('10-baseline-feedback', old_template('feedback.html').render(**methodist_ctx, draft=baseline_draft), old_css)
 css = (ROOT / 'app/static/styles.css').read_text()
+# Capture this page without scrolling, then crop to the form card. Headless
+# Chrome can leave unpainted white bands when capturing immediately after a
+# programmatic scroll. Geometry is exposed for the screenshot/crop command.
 save('02-current-course-form', env.get_template('dashboard.html').render(**ctx), css,
-     "document.querySelector('form[action=\"/ui/courses\"]').parentElement.scrollIntoView();")
+     "const card = document.querySelector('form[action=\"/ui/courses\"]').parentElement;"
+     "document.documentElement.dataset.formTop = Math.floor(card.getBoundingClientRect().top);")
 
 # Same valid teaching fixture used by the test suite; deterministic, not a model run.
 from tests.conftest import teaching_payload, SOURCE_TEXT
@@ -104,8 +110,30 @@ html = env.get_template('draft_view.html').render(**ctx, draft=draft, generation
 save('04-current-source-evidence', html, css, "document.querySelector('details').open = true;")
 
 # The full, teacher-edited export illustration has its own maintained source.
-subprocess.run([sys.executable, str(ROOT / 'docs/rpd-preview/build_example.py')], check=True, cwd=ROOT)
+if '--html-only' not in sys.argv:
+    subprocess.run([sys.executable, str(ROOT / 'docs/rpd-preview/build_example.py')], check=True, cwd=ROOT)
 catalogue = load_catalogue()
 save('06-working-tree-competency-search', env.get_template('competencies.html').render(
     course=course, programs=catalogue.programs(), program_id=None, search=None, error=None), css)
 print('Rendered eight actual UI template views into', OUT)
+
+if '--capture-form' in sys.argv:
+    from PIL import Image
+    full_capture = OUT / 'form-full.png'
+    result = subprocess.run([
+        'google-chrome', '--headless', '--disable-gpu', '--no-sandbox',
+        '--disable-dev-shm-usage', '--user-data-dir=' + str(OUT / 'form-chrome'),
+        '--hide-scrollbars', '--virtual-time-budget=1500', '--window-size=1280,4300',
+        '--dump-dom', '--screenshot=' + str(full_capture),
+        (OUT / '02-current-course-form.html').as_uri(),
+    ], capture_output=True, text=True, check=True)
+    match = re.search(r'data-form-top="(\d+)"', result.stdout)
+    if not match:
+        raise RuntimeError('Could not locate the course form in the captured page')
+    top = max(0, int(match[1]) - 16)
+    with Image.open(full_capture) as screenshot:
+        if top + 1300 > screenshot.height:
+            raise RuntimeError('Full-page capture is too short for the course form')
+        destination = Path(__file__).parent / 'images/02-current-course-form.png'
+        screenshot.crop((0, top, 1280, top + 1300)).save(destination)
+    print('Saved course-form screenshot without scrolling:', destination)
