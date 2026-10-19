@@ -1,0 +1,28 @@
+RPD-AI autumn report — validation snapshot, 19 October 2026
+
+Baseline: 163f265 (23 May 2026), latest local commit before 1 September.
+Committed endpoint: eaeab71 (16 October 2026).
+Current snapshot includes existing uncommitted competency-search code.
+
+Command: .venv/bin/python -m pytest -q -o faulthandler_timeout=25
+Result: 237 passed, 29 warnings in 3.43s.
+Warnings: passlib crypt deprecation; SQLAlchemy defaults using datetime.utcnow.
+The sandboxed HTTP test run stalled; the complete run outside the sandbox passed.
+Tests mock/bypass external model services. No live model quality claim is made.
+
+Catalogue: 385 rows, 22 program IDs, 78 whitespace-normalized descriptions.
+Screenshots: actual Jinja templates and corresponding CSS, browser-rendered with
+synthetic data. Historical template taken directly from Git revision 163f265.
+Evidence screenshot uses a valid test fixture and real validation/render services.
+Competency screenshot shows the pre-search UI, not fabricated retrieval results.
+
+Export illustrations (Figures 9–11): a fuller teacher-edited course example,
+built by docs/rpd-preview/build_example.py and formatted using the supplied
+bachelor-level NSU RPD as a reference. The example has six topic blocks,
+catalogue-derived OПК-1/OПК-3 descriptions, and a proposed course plan totaling
+108 hours (18 lectures + 36 practical classes + 54 independent study).
+Teaching plans include numbered learning-outcome references. Reading-list
+details were checked against the authors' sites linked in the example.
+The completed illustration includes manual content/formatting, not a claim that
+the current generator fills all of those fields or accepts competencies itself.
+Application code was not changed for these report illustrations.
