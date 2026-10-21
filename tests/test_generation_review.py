@@ -29,7 +29,9 @@ def test_saved_evidence_survives_review_export_and_edit(authenticated_client, db
     original = review["evidence"]
     page = authenticated_client.get(f"/drafts/{draft.id}/view")
     assert page.status_code == 200
-    assert "Показать основания тем" in page.text
+    assert "Источники черновика" in page.text
+    assert "Замечания к черновику" not in page.text
+    assert review["warnings"][0] not in page.text
     assert "lecture.pdf" in page.text
     exported = authenticated_client.get(f"/drafts/{draft.id}/download-docx")
     assert exported.status_code == 200

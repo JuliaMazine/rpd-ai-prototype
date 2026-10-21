@@ -26,7 +26,7 @@ from app.services.docx_service import (
 
 
 from app.web import templates
-from app.services.competency_generation_service import review_context, update_draft_mappings
+from app.services.competency_generation_service import update_draft_mappings
 
 
 router = APIRouter()
@@ -52,8 +52,6 @@ def view_draft_page(
             "draft": draft,
             "active_role": active_role,
             "generation_review": review,
-            "competency_review": review_context(draft),
-            "competency_editable": active_role == "USER_TEACHER" and draft.status in TEACHER_EDITABLE_STATUSES,
             "document_blocks": document_blocks(draft.content),
         },
     )
@@ -94,8 +92,6 @@ def edit_draft_page(
         name="draft_edit.html",
         context={
             "draft": draft,
-            "competency_review": review_context(draft),
-            "competency_editable": draft.status in TEACHER_EDITABLE_STATUSES,
         },
     )
 

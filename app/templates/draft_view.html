@@ -109,31 +109,9 @@
     </div>
 {% endif %}
 
-{% if generation_review %}
-<div class="card">
-    {% set warnings = generation_review.get('warnings', []) %}
-    <details>
-        <summary>Замечания к черновику · {{ warnings|length }}</summary>
-        {% if generation_review.status == 'template' %}<p>Создан шаблонный черновик.</p>{% endif %}
-        {% if generation_review.edited %}<p>Текст изменен после генерации. Источники относятся к исходной версии.</p>{% endif %}
-        {% if warnings %}<ul>{% for warning in warnings %}<li>{{ warning }}</li>{% endfor %}</ul>{% else %}<p>Автоматическая проверка не добавила замечаний.</p>{% endif %}
-        {% if generation_review.get('evidence') %}
-        <details><summary>Показать основания тем</summary>
-        {% for topic, items in generation_review.evidence|groupby('topic') %}
-            <p><strong>{{ topic }}</strong></p>
-            {% for item in items %}
-            <details class="source-excerpt">
-                <summary>{{ item.filename }} — {{ item.location }}</summary>
-                <blockquote style="white-space: pre-wrap">{{ item.quote }}</blockquote>
-            </details>
-            {% endfor %}
-        {% endfor %}
-        </details>
-        {% endif %}
-    </details>
-</div>
+{% if generation_review.get('status') == 'template' %}
+<p class="hint">Это шаблонный черновик. Наполните его содержанием перед использованием.</p>
 {% endif %}
-{% include "competency_review.html" %}
 <div class="card">
     <h2>Содержание черновика</h2>
     <article class="rpd-document">
@@ -152,6 +130,24 @@
     {% endfor %}
     </article>
 </div>
+
+{% if generation_review.get('evidence') %}
+<div class="card">
+    <details>
+        <summary>Источники черновика</summary>
+        {% if generation_review.edited %}<p>Текст изменен после генерации. Источники относятся к исходной версии.</p>{% endif %}
+        {% for topic, items in generation_review.evidence|groupby('topic') %}
+        <p><strong>{{ topic }}</strong></p>
+        {% for item in items %}
+        <details class="source-excerpt">
+            <summary>{{ item.filename }} — {{ item.location }}</summary>
+            <blockquote style="white-space: pre-wrap">{{ item.quote }}</blockquote>
+        </details>
+        {% endfor %}
+        {% endfor %}
+    </details>
+</div>
+{% endif %}
 
 </body>
 </html>

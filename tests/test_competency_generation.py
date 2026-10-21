@@ -133,7 +133,7 @@ def test_review_edit_and_docx_use_saved_catalogue_entries(authenticated_client, 
     with patch('app.services.competency_catalogue_service.load_catalogue', side_effect=AssertionError('Review must use snapshot')):
         page = authenticated_client.get(f'/drafts/{draft.id}/view')
         assert page.status_code == 200
-        assert 'Компетенции и результаты обучения' in page.text
+        assert 'Компетенции и результаты обучения' not in page.text
         assert candidates['results'][0]['description'] in page.text
         # Add a different learning-outcome link; preserve an unrelated manual edit.
         draft.content += '\nПримечание преподавателя.'
