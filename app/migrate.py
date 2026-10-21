@@ -5,7 +5,7 @@ from app.database import Base, engine
 from app.models import Course, Draft
 
 COURSE_METADATA_COLUMNS = (
-    "educational_program", "semester", "total_hours", "credits", "assessment_format", "topics", "contact_hours", "independent_hours",
+    "catalogue_program_id", "educational_program", "semester", "total_hours", "credits", "assessment_format", "topics", "contact_hours", "independent_hours",
 )
 
 def upgrade_course_metadata(connection):

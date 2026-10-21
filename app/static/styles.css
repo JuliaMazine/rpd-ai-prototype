@@ -348,3 +348,13 @@ select {
 }
 details { margin: 16px 0; }
 summary { cursor: pointer; font-weight: 600; }
+
+/* Checkboxes share forms with full-width text fields. */
+input[type="checkbox"] {
+    width: auto;
+    padding: 0 !important;
+    margin: 0 8px 0 0;
+    vertical-align: middle;
+}
+
+.generation-form [hidden] { display: none !important; }

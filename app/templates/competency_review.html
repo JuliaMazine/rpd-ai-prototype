@@ -1,0 +1,19 @@
+{% if competency_review %}
+<div class="card">
+    <details><summary>Компетенции и результаты обучения — проверить связи</summary>
+    <p>Программа: {{ competency_review.snapshot.program.profile }} ({{ competency_review.snapshot.program_id }}).</p>
+    <p>{% if competency_review.snapshot.reviewed %}Связи проверены преподавателем.{% else %}Модель предложила связи с результатами обучения. Проверьте их: можно убрать все связи или выбрать другие из принятых компетенций.{% endif %}</p>
+    {% if competency_review.edited %}<p>Текст редактировался вручную. Ниже приведены исходные результаты обучения; если вы изменили их, обновите соответствия непосредственно в тексте.</p>{% endif %}
+    {% if competency_editable %}<form action="/ui/drafts/{{ draft.id }}/competencies" method="post">{% endif %}
+    {% for outcome in competency_review.outcomes %}
+    <fieldset><legend>{{ outcome.text }}</legend>
+        {% for entry in competency_review.snapshot.results %}
+        {% set key = outcome.key ~ ':' ~ entry.id %}
+        <label style="display:block; margin:8px 0"><input type="checkbox" name="mapping" value="{{ key }}" {% if key in competency_review.selected %}checked{% endif %} {% if not competency_editable %}disabled{% endif %}> {{ entry.codes|join(' / ') }} — {{ entry.description }}</label>
+        {% endfor %}
+    </fieldset>
+    {% endfor %}
+    {% if competency_editable %}<p><button type="submit">Сохранить и подтвердить связи</button></p></form>{% endif %}
+    </details>
+</div>
+{% endif %}

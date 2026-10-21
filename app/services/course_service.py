@@ -15,6 +15,7 @@ class CourseInput(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     description: str = Field(default="", max_length=10000)
     educational_program: str | None = Field(default=None, max_length=255)
+    catalogue_program_id: str | None = Field(default=None, max_length=100)
     semester: int | None = Field(default=None, ge=1, le=20)
     total_hours: int | None = Field(default=None, ge=1, le=10000)
     contact_hours: int | None = Field(default=None, ge=0, le=10000)
@@ -33,6 +34,17 @@ class CourseInput(BaseModel):
                 return False
             if not value and info.field_name not in {"title", "description"}:
                 return None
+        return value
+
+    @field_validator("catalogue_program_id")
+    @classmethod
+    def check_program(cls, value):
+        if value:
+            from app.services.competency_catalogue_service import load_catalogue, CatalogueError
+            try:
+                load_catalogue().competencies(value)
+            except CatalogueError as error:
+                raise ValueError(str(error)) from error
         return value
 
     @model_validator(mode="after")
@@ -55,3 +67,16 @@ async def course_form(request: Request) -> CourseInput:
             {"field": item["loc"][0] if item["loc"] else "workload", "message": str(item["ctx"]["error"]) if not item["loc"] else "Проверьте значение поля: оно должно соответствовать допустимому типу и диапазону."}
             for item in error.errors()
         ]) from None
+
+
+def course_metadata_text(course) -> str:
+    return "\n".join([
+        f"Образовательная программа: {course.educational_program or 'уточняется'}",
+        f"Семестр: {course.semester or 'уточняется'}",
+        f"Академические часы: {course.total_hours or 'уточняется'} ({'общая трудоемкость подтверждена' if course.workload_confirmed else 'назначение часов не подтверждено'})",
+        f"Контактные часы: {course.contact_hours if course.contact_hours is not None else 'уточняются'}",
+        f"Самостоятельная работа, часов: {course.independent_hours if course.independent_hours is not None else 'уточняется'}",
+        f"Зачетные единицы: {course.credits if course.credits is not None else 'уточняется'}",
+        f"Форма промежуточной аттестации: {ASSESSMENT_LABELS.get(course.assessment_format, 'уточняется')}",
+        f"Темы / разделы дисциплины:\n{course.topics or 'уточняются'}",
+    ])

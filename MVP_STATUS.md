@@ -28,9 +28,9 @@ Success criteria:
 | MVP item | Current state | Remaining work |
 | --- | --- | --- |
 | Teacher input form | Implemented: title, description, educational program, semester, workload/credits, assessment format, and topics; validated, persisted, and editable | Confirm required fields and ranges with the selected pilot program. |
-| Predefined competency catalogue | Missing | Obtain an approved catalogue, define its data model/import, and make it browsable. |
-| Relevant competency suggestions | Missing | Rank/select from the catalogue using course data; show reasons and allow teacher confirmation or correction. The static fallback currently contains hard-coded `ОПК-1` and `ОПК-3`, which are not catalogue-backed suggestions. |
-| Generate main RPD sections | Partial: prompt and fallback contain section headings | Map structured inputs and confirmed competencies into the draft, check required sections, and evaluate outputs against a real RPD template. Supplied course metadata is included in prompts and fallback drafts; missing fields and the detailed hour allocation remain placeholders. |
+| Predefined competency catalogue | Implemented: repository CSV with program-specific codes and descriptions | Confirm catalogue approval and coverage with the pilot program. |
+| Relevant competency suggestions | Implemented: local top-five retrieval; teacher accepts checked suggestions in the generation form | Evaluate relevance against teacher-rated course examples. |
+| Generate main RPD sections | Structured teaching-content generation receives course fields, accepted competencies, and source excerpts; validated mappings and exact catalogue entries are rendered into the draft | Evaluate outputs against a real RPD template. Missing administrative facts, unsupported competency mappings, and detailed hour allocation remain placeholders. |
 | Complete editable draft | Partial: text can be edited in the browser | Validate completeness and factual consistency; make missing fields visible before export. |
 | DOCX export | Implemented at prototype level | Check layout/content against the selected official template with representative courses. |
 | Pilot time-saving evidence | Missing | Run a baseline vs. assisted timed study, record corrections and draft quality, and compute average time reduction. |

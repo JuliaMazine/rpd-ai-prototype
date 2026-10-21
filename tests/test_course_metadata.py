@@ -96,7 +96,7 @@ def test_existing_database_upgrade_preserves_courses_and_is_idempotent():
         upgrade_course_metadata(connection)
         upgrade_course_metadata(connection)
         columns = {item["name"] for item in inspect(connection).get_columns("courses")}
-        assert {"educational_program", "semester", "total_hours", "credits", "assessment_format", "topics"} <= columns
+        assert {"catalogue_program_id", "educational_program", "semester", "total_hours", "credits", "assessment_format", "topics"} <= columns
         row = connection.execute(text("SELECT title, semester FROM courses")).one()
         assert row.title == "Physics"
         assert row.semester is None
