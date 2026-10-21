@@ -6,7 +6,7 @@
 
 <label>Программа для подбора компетенций</label>
 <select name="catalogue_program_id">
-    <option value="">Не выбрана — компетенции потребуется заполнить</option>
+    <option value="">Не выбрана — поиск по всему каталогу</option>
     {% for program in catalogue_programs %}
     <option value="{{ program.program_id }}" {% if form_course and form_course.catalogue_program_id == program.program_id %}selected{% endif %}>{{ program.faculty }} · {{ program.education_level }} · {{ program.direction_code }} · {{ program.profile }} ({{ program.program_id }})</option>
     {% endfor %}

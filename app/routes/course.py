@@ -85,7 +85,7 @@ async def generation_program(request: Request):
 
 
 class GenerationPreviewInput(BaseModel):
-    program_id: str = Field(min_length=1, max_length=100)
+    program_id: str | None = Field(default=None, max_length=100)
 
 
 @router.post("/api/courses/{course_id}/generation-competencies")
@@ -97,7 +97,7 @@ def generation_competencies(request: Request, course_id: int, data: GenerationPr
     result = retrieve_for_generation(course, data.program_id)
     if result["status"] != "retrieved":
         raise HTTPException(503, " ".join(result["warnings"]))
-    return {"token": preview_token(course, result), "results": result["results"]}
+    return {"token": preview_token(course, result), "results": result["results"], "material_sources": result.get("material_sources", [])}
 
 
 @router.post("/ui/courses/{course_id}/generate-draft")
@@ -130,7 +130,7 @@ def ui_generate_draft(
     competencies = {"program_id": program_id, "results": [], "mappings": [], "warnings": [], "status": "not_selected", "reviewed": False}
     if skip_competencies:
         competencies.update(status="skipped", warnings=["Преподаватель продолжил без подбора компетенций. Заполните соответствия вручную."])
-    elif program_id:
+    elif program_id or competency_token:
         if not competency_token:
             raise HTTPException(422, "Дождитесь предложений компетенций или выберите генерацию без компетенций.")
         try:

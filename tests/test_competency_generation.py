@@ -71,7 +71,7 @@ def test_retrieval_is_program_scoped_and_records_provenance(sample_course, candi
     assert result['program']['program_id'] == candidates['program_id']
 
 
-@pytest.mark.parametrize('program_id,status', [(None, 'missing_program'), ('unknown', 'unavailable'), ('NSU-ММФ-03', 'unavailable')])
+@pytest.mark.parametrize('program_id,status', [(None, 'unavailable'), ('unknown', 'unavailable'), ('NSU-ММФ-03', 'unavailable')])
 def test_unavailable_retrieval_is_explicit_and_never_fabricates_results(sample_course, program_id, status):
     sample_course.catalogue_program_id = program_id
     with patch('app.services.competency_generation_service.search_competencies', side_effect=EmbeddingError('Ollama недоступна')) as search:
@@ -79,7 +79,7 @@ def test_unavailable_retrieval_is_explicit_and_never_fabricates_results(sample_c
     assert result['status'] == status
     assert result['results'] == []
     assert result['warnings']
-    if program_id != 'NSU-ММФ-03':
+    if program_id == 'unknown':
         search.assert_not_called()
 
 
@@ -294,3 +294,42 @@ def test_template_fallback_preserves_accepted_competencies(monkeypatch, sample_c
     assert candidates['results'][0]['description'] in result
     assert '[соответствие требует проверки]' in result
     assert 'каталог компетенций пока не подключен' not in result
+
+
+def test_preview_defaults_to_saved_program_and_form_has_no_duplicate_selector(authenticated_client, db_session, mapped_draft, candidates):
+    import re
+    course = mapped_draft.course
+    with patch('app.services.competency_generation_service.search_competencies', return_value=candidates) as search:
+        response = authenticated_client.post(f'/api/courses/{course.id}/generation-competencies', json={})
+    assert response.status_code == 200
+    assert search.call_args.args[1] == course.catalogue_program_id
+    db_session.add(Material(course_id=course.id, filename='text.txt', file_path='/missing', extracted_text='Материалы'))
+    db_session.commit()
+    page = authenticated_client.get('/dashboard')
+    form = re.search(r'<form[^>]+class="generation-form"[\s\S]+?</form>', page.text).group()
+    assert '<select' not in form
+    assert course.catalogue_program_id in form
+
+
+@pytest.mark.parametrize('change', ['add', 'edit', 'remove'])
+def test_material_changes_invalidate_preview(mapped_draft, candidates, change):
+    from app.services.competency_generation_service import preview_token, accept_preview
+    course = mapped_draft.course
+    material = Material(filename='lecture.txt', file_path='/missing', extracted_text='Исходные учебные материалы')
+    course.materials.append(material)
+    token = preview_token(course, candidates)
+    if change == 'add':
+        course.materials.append(Material(filename='new.txt', file_path='/new', extracted_text='Дополнительные материалы'))
+    elif change == 'edit':
+        material.extracted_text = 'Измененные учебные материалы'
+    else:
+        course.materials.remove(material)
+    with pytest.raises(ValueError, match='материалах'):
+        accept_preview(course, candidates['program_id'], token, [])
+
+
+def test_preview_without_saved_program_searches_whole_catalogue(sample_course, candidates):
+    with patch('app.services.competency_generation_service.search_competencies', return_value={**candidates, 'program_id': None}) as search:
+        result = retrieve_for_generation(sample_course)
+    assert search.call_args.args[1] is None
+    assert result['status'] == 'retrieved'

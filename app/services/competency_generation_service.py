@@ -1,6 +1,6 @@
 """Program-scoped competency candidates and validated learning-outcome mappings."""
 from app.services.competency_catalogue_service import CatalogueError, load_catalogue
-from app.services.competency_search_service import search_competencies
+from app.services.competency_search_service import search_competencies, material_sources
 from app.services.embedding_service import EmbeddingError
 
 MAPPING_HEADING = "Соотнесение результатов обучения с компетенциями образовательной программы:"
@@ -9,13 +9,10 @@ MAPPING_HEADING = "Соотнесение результатов обучени�
 def retrieve_for_generation(course, program_id=None):
     program_id = program_id or course.catalogue_program_id
     snapshot = {"program_id": program_id, "results": [], "mappings": [], "warnings": [], "reviewed": False}
-    if not program_id:
-        snapshot.update(status="missing_program", warnings=["Выберите программу из каталога в настройках дисциплины. Компетенции не назначены."])
-        return snapshot
     try:
         catalogue = load_catalogue()
         program = next((item for item in catalogue.programs() if item["program_id"] == program_id), None)
-        if program is None:
+        if program_id and program is None:
             raise ValueError("Выбранная программа отсутствует в каталоге.")
         result = search_competencies(course, program_id, catalogue=catalogue)
         snapshot.update(result, program=program, status="retrieved")
@@ -44,16 +41,20 @@ def mapping_text(content, competencies):
     if not competencies.get("results"):
         return MAPPING_HEADING + " [заполнить по утвержденному каталогу]."
     entries = {entry["id"]: entry for entry in competencies["results"]}
+    def codes(entry):
+        if competencies.get("program_id"):
+            return " / ".join(entry["codes"])
+        return "; ".join(dict.fromkeys(row["competence_code"] + " (" + row["program_id"] + ")" for row in entry["programs"]))
     rows = []
     for mapping in getattr(content, "competency_mappings", []):
         entry = entries[mapping.competency_id]
         outcome = getattr(content, mapping.outcome_kind)[mapping.outcome_index - 1]
         formatter = knowledge_outcome if mapping.outcome_kind == "knowledge" else skill_outcome
-        rows.append([" / ".join(entry["codes"]), entry["description"], formatter(outcome)])
+        rows.append([codes(entry), entry["description"], formatter(outcome)])
     mapped_ids = {mapping.competency_id for mapping in getattr(content, "competency_mappings", [])}
     for entry in competencies["results"]:
         if entry["id"] not in mapped_ids:
-            rows.append([" / ".join(entry["codes"]), entry["description"], "[соответствие требует проверки]"])
+            rows.append([codes(entry), entry["description"], "[соответствие требует проверки]"])
     return MAPPING_HEADING + "\n" + table(["Код компетенции", "Формулировка из каталога", "Результат обучения"], rows)
 
 
@@ -117,7 +118,7 @@ def update_draft_mappings(draft, selections):
 def course_search_fingerprint(course, program_id):
     import json
     from hashlib import sha256
-    return sha256(json.dumps([course.id, course.title, course.description, course.topics, program_id], ensure_ascii=False).encode()).hexdigest()
+    return sha256(json.dumps([course.id, course.title, course.description, course.topics, program_id, course.catalogue_program_id, material_sources(course)], ensure_ascii=False).encode()).hexdigest()
 
 
 def preview_token(course, competencies):
@@ -138,7 +139,7 @@ def accept_preview(course, program_id, token, selected_ids):
     except BadData as error:
         raise ValueError("Подбор устарел. Обновите предложения компетенций перед генерацией.") from error
     if payload["course_fingerprint"] != course_search_fingerprint(course, program_id):
-        raise ValueError("Сведения о дисциплине или программе изменились. Обновите предложения компетенций.")
+        raise ValueError("Сведения о дисциплине, программе или загруженных материалах изменились. Обновите предложения компетенций.")
     competencies = payload["competencies"]
     if competencies["catalogue_fingerprint"] != load_catalogue().fingerprint:
         raise ValueError("Каталог изменился. Обновите предложения компетенций.")

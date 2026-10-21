@@ -1,17 +1,11 @@
 <form action="/ui/courses/{{ course.id }}/generate-draft" method="post" class="generation-form" data-preview-url="/api/courses/{{ course.id }}/generation-competencies">
-    <label for="generation-program-{{ course.id }}">Образовательная программа для компетенций</label>
-    <select name="catalogue_program_id" id="generation-program-{{ course.id }}">
-        <option value="">Продолжить без компетенций</option>
-        {% for program in catalogue_programs %}
-        <option value="{{ program.program_id }}" {% if course.catalogue_program_id == program.program_id %}selected{% endif %}>{{ program.faculty }} · {{ program.education_level }} · {{ program.direction_code }} · {{ program.profile }} ({{ program.program_id }})</option>
-        {% endfor %}
-    </select>
+    <p class="empty">Компетенции подбираются по загруженным материалам{% if course.catalogue_program_id %} в рамках сохраненной программы {{ course.catalogue_program_id }}{% else %} из всего каталога{% endif %}. Изменить программу можно в сведениях о дисциплине.</p>
     <p class="empty">Проверьте предложенные компетенции и снимите лишние. Нажимая «Создать черновик РПД», вы принимаете отмеченные компетенции для этого черновика.</p>
-    <p class="competency-status" role="status" aria-live="polite">Выберите программу для подбора компетенций.</p>
+    <p class="competency-status" role="status" aria-live="polite">Подбираем компетенции по загруженным материалам…</p>
     <div class="competency-options"></div>
     <input type="hidden" name="competency_token" value="">
     <button type="button" class="retry-competencies" hidden>Обновить предложения</button>
     <label class="skip-competencies" hidden><input type="checkbox" name="skip_competencies" value="true"> Продолжить без компетенций и заполнить их вручную</label>
-    <noscript><p>Для просмотра предложений включите JavaScript или выберите «Продолжить без компетенций».</p><label><input type="checkbox" name="skip_competencies" value="true"> Продолжить без компетенций</label></noscript>
+    <noscript><p>Для просмотра предложений включите JavaScript. Можно продолжить без компетенций и заполнить их вручную.</p><label><input type="checkbox" name="skip_competencies" value="true"> Продолжить без компетенций</label></noscript>
     <p><button type="submit">Создать черновик РПД</button></p>
 </form>

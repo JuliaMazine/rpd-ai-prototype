@@ -1,6 +1,5 @@
 /* Show candidates inside each course's generation form; submit accepts checked items. */
 document.querySelectorAll('.generation-form').forEach((form) => {
-    const program = form.querySelector('[name="catalogue_program_id"]');
     const token = form.querySelector('[name="competency_token"]');
     const options = form.querySelector('.competency-options');
     const status = form.querySelector('.competency-status');
@@ -13,7 +12,7 @@ document.querySelectorAll('.generation-form').forEach((form) => {
     let generating = false;
 
     function updateButton() {
-        submit.disabled = generating || (Boolean(program.value) && !ready && !skip.checked);
+        submit.disabled = generating || (!ready && !skip.checked);
     }
 
     async function load() {
@@ -27,15 +26,11 @@ document.querySelectorAll('.generation-form').forEach((form) => {
         skipLabel.hidden = true;
         retry.hidden = true;
         updateButton();
-        if (!program.value) {
-            status.textContent = 'Компетенции не выбраны. Соответствия можно заполнить в черновике вручную.';
-            return;
-        }
-        status.textContent = 'Подбираем пять компетенций… Первый подбор может занять несколько минут.';
+        status.textContent = 'Подбираем пять компетенций по загруженным материалам… Первый подбор может занять несколько минут.';
         try {
             const response = await fetch(form.dataset.previewUrl, {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({program_id: program.value}), signal: current.signal,
+                body: JSON.stringify({}), signal: current.signal,
             });
             const result = await response.json();
             if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : 'Не удалось подобрать компетенции.');
@@ -55,7 +50,7 @@ document.querySelectorAll('.generation-form').forEach((form) => {
                 options.append(label);
             });
             ready = true;
-            status.textContent = 'Предложено компетенций: ' + result.results.length + '. Снимите отметки с неподходящих.';
+            status.textContent = 'Предложено компетенций: ' + result.results.length + (result.material_sources?.length ? ' по загруженным материалам (' + result.material_sources.length + ' файлов).' : ' по описанию и темам дисциплины.') + ' Снимите отметки с неподходящих.';
             retry.hidden = false;
         } catch (error) {
             if (current.signal.aborted || controller !== current) return;
@@ -65,17 +60,16 @@ document.querySelectorAll('.generation-form').forEach((form) => {
         }
         updateButton();
     }
-    program.addEventListener('change', load);
     retry.addEventListener('click', load);
     skip.addEventListener('change', updateButton);
     form.addEventListener('submit', (event) => {
-        if (generating || (program.value && !ready && !skip.checked)) {
+        if (generating || (!ready && !skip.checked)) {
             event.preventDefault();
             return;
         }
         generating = true;
         updateButton();
-        status.textContent = 'Создаем черновик… ' + (program.value && ready ? 'Используем отмеченные компетенции.' : 'Компетенции потребуется заполнить вручную.');
+        status.textContent = 'Создаем черновик… ' + (ready ? 'Используем отмеченные компетенции.' : 'Компетенции потребуется заполнить вручную.');
     });
     // Refresh after navigating Back, where browsers may preserve disabled buttons.
     window.addEventListener('pageshow', (event) => {

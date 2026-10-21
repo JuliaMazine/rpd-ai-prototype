@@ -218,3 +218,39 @@ def test_search_failure_is_visible_and_can_be_retried(authenticated_client, owne
     assert "Найти пять компетенций" in page.text
     api = authenticated_client.post(f"/api/courses/{owned_course.id}/competencies/search", json={})
     assert api.status_code == 503
+
+
+def test_uploaded_material_changes_ranking_with_unchanged_course_fields(catalogue, embedding_config, fake_encoder):
+    from app.models import Material
+    course = Course(title='Курс', description='Общее описание', topics='Общие темы')
+    material = Material(filename='lecture.pdf', file_path='/missing.pdf', extracted_text='Страница 1:\nАнализ данных')
+    course.materials.append(material)
+    first = search_competencies(course, catalogue=catalogue, config=embedding_config)
+    assert 'Анализ данных' in fake_encoder['calls'][0][0]
+    assert first['material_sources'][0]['filename'] == 'lecture.pdf'
+    assert first['input_source'] == 'uploaded_materials'
+    fake_encoder['calls'].clear()
+    material.extracted_text = 'Страница 1:\nхимия'
+    second = search_competencies(course, catalogue=catalogue, config=embedding_config)
+    assert first['results'][0]['id'] != second['results'][0]['id']
+    assert first['material_sources'][0]['text_sha256'] != second['material_sources'][0]['text_sha256']
+    assert len(fake_encoder['calls']) == 1  # Catalogue cache remains reusable.
+
+
+def test_materials_work_without_description_and_topics(catalogue, embedding_config, fake_encoder):
+    from app.models import Material
+    course = Course(title='Курс')
+    course.materials.append(Material(filename='slides.pptx', file_path='/missing.pptx', extracted_text='Слайд 1:\nМатематические модели'))
+    assert len(search_competencies(course, catalogue=catalogue, config=embedding_config)['results']) == 5
+
+
+def test_material_query_is_bounded_and_samples_multiple_files():
+    from app.models import Material
+    from app.services.competency_search_service import course_query
+    course = Course(description='D' * 10000, topics='T' * 16000)
+    course.materials = [Material(filename='long.txt', file_path='/long.txt', extracted_text='A' * 50000 + 'END-FIRST'),
+                        Material(filename='second.txt', file_path='/second.txt', extracted_text='SECOND-FILE-CONTENT')]
+    query = course_query(course)
+    assert len(query) < 16500
+    assert 'END-FIRST' in query
+    assert 'SECOND-FILE-CONTENT' in query
