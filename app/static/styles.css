@@ -358,3 +358,10 @@ input[type="checkbox"] {
 }
 
 .generation-form [hidden] { display: none !important; }
+
+.competency-matrix-wrap { overflow-x: auto; margin-top: 16px; }
+.competency-matrix { width: 100%; border-collapse: collapse; }
+.competency-matrix th, .competency-matrix td { border: 1px solid var(--border-strong); padding: 10px; }
+.competency-matrix th:first-child { min-width: 220px; text-align: left; font-weight: 400; }
+.competency-matrix td { text-align: center; }
+.source-excerpt { margin: 8px 0 8px 16px; }
