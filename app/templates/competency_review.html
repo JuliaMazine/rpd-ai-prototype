@@ -1,30 +1,6 @@
 {% if competency_review %}
 <div class="card">
-    <details>
-        <summary>Компетенции и результаты обучения · {% if competency_review.snapshot.reviewed %}связи проверены{% else %}проверить связи{% endif %}</summary>
-        <p>Программа: {{ competency_review.snapshot.program.profile if competency_review.snapshot.program else 'Все программы каталога' }}.</p>
-        {% if competency_review.edited %}<p>Результаты приведены на момент генерации. Если вы изменили их в тексте, обновите соответствия вручную.</p>{% endif %}
-        <details>
-            <summary>Формулировки компетенций ({{ competency_review.snapshot.results|length }})</summary>
-            <ul>{% for entry in competency_review.snapshot.results %}<li><strong>{{ entry.codes|join(' / ') }}</strong> — {{ entry.description }}</li>{% endfor %}</ul>
-        </details>
-        {% if competency_editable %}<p>Отметьте связи результатов обучения с компетенциями.</p><form action="/ui/drafts/{{ draft.id }}/competencies" method="post">{% endif %}
-        <div class="competency-matrix-wrap">
-        <table class="competency-matrix">
-            <thead><tr><th scope="col">Результат обучения</th>{% for entry in competency_review.snapshot.results %}<th scope="col">{{ entry.codes|join(' / ') }}</th>{% endfor %}</tr></thead>
-            <tbody>
-            {% for outcome in competency_review.outcomes %}
-                <tr><th scope="row">{{ outcome.text }}</th>
-                {% for entry in competency_review.snapshot.results %}
-                {% set key = outcome.key ~ ':' ~ entry.id %}
-                <td><input type="checkbox" name="mapping" value="{{ key }}" aria-label="{{ entry.codes|join(' / ') }}: {{ outcome.text }}" {% if key in competency_review.selected %}checked{% endif %} {% if not competency_editable %}disabled{% endif %}></td>
-                {% endfor %}
-                </tr>
-            {% endfor %}
-            </tbody>
-        </table>
-        </div>
-        {% if competency_editable %}<p><button type="submit">Сохранить связи</button></p></form>{% endif %}
-    </details>
+    <p><strong>Компетенции и результаты обучения</strong></p>
+    <p>Компетенции включены в текст черновика. При необходимости исправьте их в разделе 3 через «Редактировать черновик».</p>
 </div>
 {% endif %}
