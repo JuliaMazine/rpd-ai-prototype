@@ -1,0 +1,33 @@
+RPD-AI weekly report — 19–26 October 2026
+Documentation snapshot: 21 October 2026, application revision 02cbe36.
+The report covers additions only, following the autumn-2026 report style.
+No work after the snapshot date is claimed.
+
+Latest complete application run: 274 passed, 53 deprecation warnings in 4.40s.
+Final application presentation changes: 35 relevant tests passed in 1.27s.
+Warnings concern passlib crypt and SQLAlchemy datetime.utcnow defaults.
+These are existing verification results from this development session; model
+quality and educational correctness are not established by automated tests.
+
+Local checks: real qwen3-embedding:0.6b retrieval, material-only search with saved
+program, and local qwen3:4b generation/DOCX export. Browser checks covered
+selection retention, replacement, all-selected no-op, and failed-refresh recovery.
+
+Figures are browser-rendered current application templates with synthetic data.
+Figure 1 uses actual local embedding results saved in example-search.json and
+shows a simulated teacher keeping two entries. Its fetch response is replayed
+only for rendering the documentation, not an application API request.
+Figure 2 uses illustrative validated teaching content and manually supplied
+outcome mappings, rendered through the application's document-block template.
+It is a document illustration, not a claim of autonomous model quality.
+No private courses, uploads, or application database records were used.
+
+Rebuild screenshots from the saved search result:
+.venv/bin/python docs/week-2026-10-19/capture_screenshots.py --reuse-search
+Rebuild DOCX:
+.venv/bin/python docs/week-2026-10-19/build_report.py
+Export PDF:
+libreoffice -env:UserInstallation=file:///tmp/rpd-week-2026-10-19-lo --headless --convert-to pdf --outdir docs/week-2026-10-19 docs/week-2026-10-19/report.docx
+
+PDF: 4 A4 pages. Text extraction checked for complete sections and captions.
+Draft-review-screen discussion is omitted at the user's request.

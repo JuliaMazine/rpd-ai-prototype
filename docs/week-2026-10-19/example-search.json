@@ -1,0 +1,129 @@
+{
+  "program_id": "NSU-ММФ-03",
+  "results": [
+    {
+      "id": "9cdb79e9b9db0b1f32dc1ec94666a8ff5332d48f2baee18a92c9068e18c3f991",
+      "description": "Способен разрабатывать и анализировать математические модели, применять методы математического моделирования в профессиональной деятельности",
+      "codes": [
+        "ОПК-3"
+      ],
+      "programs": [
+        {
+          "program_id": "NSU-ММФ-03",
+          "faculty": "ММФ",
+          "education_level": "Бакалавриат",
+          "direction_code": "01.03.02",
+          "direction_name": "Прикладная математика и информатика",
+          "profile": "Прикладная математика и информатика",
+          "competence_type": "ОПК",
+          "competence_code": "ОПК-3"
+        }
+      ],
+      "score": 0.6906945751386521
+    },
+    {
+      "id": "88a6dc17c01c57dc155c5086900b5b9dceb11675c7d6f0a6ce5afc43ad70c979",
+      "description": "Способен применять фундаментальные знания, полученные в области математических и (или) естественных наук, и использовать их в профессиональной деятельности",
+      "codes": [
+        "ОПК-1"
+      ],
+      "programs": [
+        {
+          "program_id": "NSU-ММФ-03",
+          "faculty": "ММФ",
+          "education_level": "Бакалавриат",
+          "direction_code": "01.03.02",
+          "direction_name": "Прикладная математика и информатика",
+          "profile": "Прикладная математика и информатика",
+          "competence_type": "ОПК",
+          "competence_code": "ОПК-1"
+        }
+      ],
+      "score": 0.4950308210151971
+    },
+    {
+      "id": "fb83f42faaa374410604129c567a8b96e2219c6b7f4b14605b098f2f73eb52c3",
+      "description": "Способен применять математические методы и современные информационные технологии, использовать и создавать программные средства для решения задач профессиональной деятельности",
+      "codes": [
+        "ОПК-2"
+      ],
+      "programs": [
+        {
+          "program_id": "NSU-ММФ-03",
+          "faculty": "ММФ",
+          "education_level": "Бакалавриат",
+          "direction_code": "01.03.02",
+          "direction_name": "Прикладная математика и информатика",
+          "profile": "Прикладная математика и информатика",
+          "competence_type": "ОПК",
+          "competence_code": "ОПК-2"
+        }
+      ],
+      "score": 0.4943227906388439
+    },
+    {
+      "id": "fe92d8c4f6b49059603dfef2182a71dea5ca00e0eae04c4ad012a502a5f64ed6",
+      "description": "Способен осуществлять поиск, критический анализ и синтез информации, применять системный подход для решения поставленных задач",
+      "codes": [
+        "УК-1"
+      ],
+      "programs": [
+        {
+          "program_id": "NSU-ММФ-03",
+          "faculty": "ММФ",
+          "education_level": "Бакалавриат",
+          "direction_code": "01.03.02",
+          "direction_name": "Прикладная математика и информатика",
+          "profile": "Прикладная математика и информатика",
+          "competence_type": "УК",
+          "competence_code": "УК-1"
+        }
+      ],
+      "score": 0.4260039922521578
+    },
+    {
+      "id": "6b73a4feeddfd05197156d404e4e0b458e05cfd12d3d3ea85a89ff97973e84b0",
+      "description": "Способен самостоятельно представлять научные результаты, составлять научные документы и отчеты",
+      "codes": [
+        "ОПК-6"
+      ],
+      "programs": [
+        {
+          "program_id": "NSU-ММФ-03",
+          "faculty": "ММФ",
+          "education_level": "Бакалавриат",
+          "direction_code": "01.03.02",
+          "direction_name": "Прикладная математика и информатика",
+          "profile": "Прикладная математика и информатика",
+          "competence_type": "ОПК",
+          "competence_code": "ОПК-6"
+        }
+      ],
+      "score": 0.4230342569680272
+    }
+  ],
+  "mappings": [],
+  "warnings": [],
+  "reviewed": false,
+  "catalogue_fingerprint": "7e5ab20852191456f1f75ef037ff89591cb970e391c5620a6999f845583b7b5d",
+  "model": "qwen3-embedding:0.6b",
+  "model_digest": "ac6da0dfba84a81fdbfbaf330198c33cd77c4cdfc53e8bc50eb581914a15621d",
+  "candidates": 18,
+  "material_sources": [
+    {
+      "id": 1,
+      "filename": "lecture.pdf",
+      "text_sha256": "6da830056821af861c845f080943d5712f4eb1c51c0f9cca932ce26d894ab1e1"
+    }
+  ],
+  "input_source": "uploaded_materials",
+  "program": {
+    "program_id": "NSU-ММФ-03",
+    "faculty": "ММФ",
+    "education_level": "Бакалавриат",
+    "direction_code": "01.03.02",
+    "direction_name": "Прикладная математика и информатика",
+    "profile": "Прикладная математика и информатика"
+  },
+  "status": "retrieved"
+}
