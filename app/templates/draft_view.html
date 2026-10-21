@@ -109,22 +109,8 @@
     </div>
 {% endif %}
 
-{% if generation_review %}
-<div class="card">
-    <h2>Проверка источников и полноты</h2>
-    {% if generation_review.edited %}<p>Текст изменен после генерации. Ниже показаны основания исходного черновика; правки требуют повторной проверки.</p>{% endif %}
-    {% for warning in generation_review.get('warnings', []) %}<p>{{ warning }}</p>{% endfor %}
-    {% if generation_review.get('evidence') %}
-    <p>Выбранные фрагменты найдены в материалах. Формулировки проекта и методические дополнения проверяет преподаватель.</p>
-    <details><summary>Показать основания тем и утверждений</summary>
-    {% for item in generation_review.evidence %}
-        <p><strong>{{ item.topic }}</strong>: {{ item.claim }}</p>
-        <blockquote style="white-space: pre-wrap">{{ item.quote }}</blockquote>
-        <p>{{ item.filename }} — {{ item.location }} ({{ item.id }})</p>
-    {% endfor %}
-    </details>
-    {% endif %}
-</div>
+{% if generation_review.get('status') == 'template' %}
+<p class="hint">Это шаблонный черновик. Наполните его содержанием перед использованием.</p>
 {% endif %}
 <div class="card">
     <h2>Содержание черновика</h2>
@@ -144,6 +130,24 @@
     {% endfor %}
     </article>
 </div>
+
+{% if generation_review.get('evidence') %}
+<div class="card">
+    <details>
+        <summary>Источники черновика</summary>
+        {% if generation_review.edited %}<p>Текст изменен после генерации. Источники относятся к исходной версии.</p>{% endif %}
+        {% for topic, items in generation_review.evidence|groupby('topic') %}
+        <p><strong>{{ topic }}</strong></p>
+        {% for item in items %}
+        <details class="source-excerpt">
+            <summary>{{ item.filename }} — {{ item.location }}</summary>
+            <blockquote style="white-space: pre-wrap">{{ item.quote }}</blockquote>
+        </details>
+        {% endfor %}
+        {% endfor %}
+    </details>
+</div>
+{% endif %}
 
 </body>
 </html>

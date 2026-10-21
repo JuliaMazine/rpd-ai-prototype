@@ -4,6 +4,15 @@
 <label>Образовательная программа</label>
 <input type="text" name="educational_program" maxlength="255" placeholder="Например: Информатика и вычислительная техника" value="{{ form_course.educational_program or '' if form_course else '' }}">
 
+<label>Программа для подбора компетенций</label>
+<select name="catalogue_program_id">
+    <option value="">Не выбрана — поиск по всему каталогу</option>
+    {% for program in catalogue_programs %}
+    <option value="{{ program.program_id }}" {% if form_course and form_course.catalogue_program_id == program.program_id %}selected{% endif %}>{{ program.faculty }} · {{ program.education_level }} · {{ program.direction_code }} · {{ program.profile }} ({{ program.program_id }})</option>
+    {% endfor %}
+</select>
+<p class="empty">Компетенции из этой программы будут предложены в форме создания черновика. Проверьте выбор перед генерацией.</p>
+
 <label>Семестр</label>
 <input type="number" name="semester" min="1" max="20" step="1" value="{{ form_course.semester or '' if form_course else '' }}">
 

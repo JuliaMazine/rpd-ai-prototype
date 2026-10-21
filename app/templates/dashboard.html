@@ -202,7 +202,7 @@
                     </form>
                 </details>
 
-                <p><a class="button-link" href="/courses/{{ course.id }}/competencies">Подобрать компетенции</a></p>
+                <details><summary>Проверить подбор компетенций</summary><p><a class="button-link" href="/courses/{{ course.id }}/competencies">Открыть поиск по каталогу</a></p></details>
 
                 <h4>Загруженные материалы</h4>
 
@@ -229,9 +229,7 @@
                 {% if course.materials %}
                     <div class="hint">{{ generation_label }}. {{ generation_hint }}</div>
 
-                    <form action="/ui/courses/{{ course.id }}/generate-draft" method="post">
-                        <button type="submit">Создать черновик РПД</button>
-                    </form>
+                    {% include "generation_form.html" %}
                 {% else %}
                     <p class="empty">Перед созданием черновика загрузите хотя бы один материал.</p>
                 {% endif %}
@@ -368,5 +366,6 @@
 
 {% endif %}
 
+<script src="/static/generation.js" defer></script>
 </body>
 </html>

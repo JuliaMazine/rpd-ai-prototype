@@ -46,6 +46,7 @@ class Course(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     educational_program = Column(String(255), nullable=True)
+    catalogue_program_id = Column(String(100), nullable=True)
     semester = Column(Integer, nullable=True)
     total_hours = Column(Integer, nullable=True)
     contact_hours = Column(Integer, nullable=True)

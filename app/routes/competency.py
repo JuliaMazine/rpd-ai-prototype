@@ -39,7 +39,8 @@ def search_page(request, course, program_id=None, run_search=False):
 
 @router.get("/courses/{course_id}/competencies")
 def competencies_page(request: Request, course_id: int, db: Session = Depends(get_db)):
-    return search_page(request, owned_course(request, course_id, db))
+    course = owned_course(request, course_id, db)
+    return search_page(request, course, course.catalogue_program_id)
 
 
 @router.post("/ui/courses/{course_id}/competencies/search")
@@ -56,7 +57,7 @@ class SearchInput(BaseModel):
 def api_search_competencies(request: Request, course_id: int, data: SearchInput, db: Session = Depends(get_db)):
     course = owned_course(request, course_id, db)
     try:
-        return search_competencies(course, (data.program_id or "").strip() or None)
+        return search_competencies(course, (data.program_id or "").strip() or course.catalogue_program_id)
     except ValueError as error:
         raise HTTPException(422, str(error)) from None
     except (CatalogueError, EmbeddingError) as error:

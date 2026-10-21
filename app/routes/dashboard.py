@@ -81,6 +81,12 @@ def dashboard(
         generation_label = "Шаблон"
         generation_hint = "Проверьте настройки генерации. Будет создан шаблонный черновик."
 
+    from app.services.competency_catalogue_service import load_catalogue, CatalogueError
+    try:
+        catalogue_programs = load_catalogue().programs()
+    except CatalogueError:
+        catalogue_programs = []
+
     return templates.TemplateResponse(
         request=request,
         name="dashboard.html",
@@ -92,6 +98,7 @@ def dashboard(
             "role_teacher": ROLE_TEACHER,
             "role_methodist": ROLE_METHODIST,
             "courses": courses,
+            "catalogue_programs": catalogue_programs,
             "generation_label": generation_label,
             "generation_hint": generation_hint,
             "max_upload_mb": settings.max_upload_bytes // (1024 * 1024),

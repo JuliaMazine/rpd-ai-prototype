@@ -11,24 +11,44 @@ _index_lock = Lock()
 TOP_K = 5
 
 
+def search_materials(course):
+    return sorted(
+        [item for item in course.materials if (item.extracted_text or "").strip()],
+        key=lambda item: (item.id or 0, item.filename),
+    )
+
+
+def material_sources(course):
+    return [{"id": item.id, "filename": item.filename,
+             "text_sha256": sha256(item.extracted_text.encode()).hexdigest()}
+            for item in search_materials(course)]
+
+
 def course_query(course):
+    from app.services.rpd_evidence_service import source_context
     parts = []
+    materials = search_materials(course)
+    if materials:
+        texts = "\n\n".join("[Источник: " + item.filename.replace("\n", " ").replace("\r", " ") + "]\n" + item.extracted_text for item in materials)
+        context, _ = source_context(texts, budget=12000)
+        parts.append("Содержание загруженных учебных материалов (основа подбора):\n" + context)
     if (course.description or "").strip():
-        parts.append("Описание дисциплины: " + course.description.strip())
+        parts.append("Описание дисциплины: " + course.description.strip()[:2000])
     if (course.topics or "").strip():
-        parts.append("Темы дисциплины:\n" + course.topics.strip())
+        parts.append("Темы дисциплины:\n" + course.topics.strip()[:2000])
     if not parts:
-        raise ValueError("Добавьте описание или темы дисциплины, прежде чем подбирать компетенции.")
+        raise ValueError("Загрузите учебные материалы или добавьте описание или темы дисциплины, прежде чем подбирать компетенции.")
     return "\n\n".join(parts)
 
 
-def search_competencies(course, program_id=None, *, catalogue=None, config=None):
+def search_competencies(course, program_id=None, *, catalogue=None, config=None, exclude_ids=(), limit=TOP_K):
     query = course_query(course)
     catalogue = catalogue or load_catalogue()
-    entries = catalogue.competencies(program_id)
+    excluded = set(exclude_ids)
+    entries = [entry for entry in catalogue.competencies(program_id) if entry["id"] not in excluded]
     config = config or EmbeddingSettings.from_environment()
     if config.model.lower().startswith("qwen3-embedding"):
-        query = "Instruct: Given a Russian university course description and topics, retrieve the relevant educational competencies.\nQuery: " + query
+        query = "Instruct: Given uploaded university teaching materials and supplementary course information, retrieve educational competencies supported by the teaching content.\nQuery: " + query
     with OllamaEmbeddings(config) as encoder:
         digest = encoder.model_digest()
         query_vector = encoder.embed([query])[0]
@@ -53,5 +73,6 @@ def search_competencies(course, program_id=None, *, catalogue=None, config=None)
         score = sum(a * b for a, b in zip(query_vector, vectors[entry["id"]], strict=True))
         ranked.append({**entry, "score": max(-1.0, min(1.0, score))})
     ranked.sort(key=lambda entry: (-entry["score"], entry["id"]))
-    return {"results": ranked[:TOP_K], "catalogue_fingerprint": catalogue.fingerprint, "model": config.model,
-            "model_digest": digest, "program_id": program_id, "candidates": len(entries)}
+    return {"results": ranked[:limit], "catalogue_fingerprint": catalogue.fingerprint, "model": config.model,
+            "model_digest": digest, "program_id": program_id, "candidates": len(entries),
+            "material_sources": material_sources(course), "input_source": "uploaded_materials" if search_materials(course) else "course_fields"}

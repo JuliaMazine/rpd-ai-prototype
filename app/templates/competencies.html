@@ -26,7 +26,7 @@
         <h2>{{ course.title }}</h2>
         <p>{{ course.description or 'Описание пока не добавлено.' }}</p>
         {% if course.topics %}<h3>Темы</h3><p class="topics">{{ course.topics }}</p>{% endif %}
-        <p class="hint">Поиск использует сохраненное описание и темы дисциплины. Изменить их можно на панели преподавателя.</p>
+        <p class="hint">Поиск использует содержание загруженных материалов; описание и темы дополняют запрос. Изменить их можно на панели преподавателя.</p>
         <form action="/ui/courses/{{ course.id }}/competencies/search" method="post" id="competency-search">
             <label for="program_id">Образовательная программа</label>
             <select name="program_id" id="program_id">
@@ -36,10 +36,10 @@
                 {% endfor %}
             </select>
             <p class="hint">Выберите программу дисциплины, чтобы искать только среди относящихся к ней компетенций. При поиске по всему каталогу одинаковые формулировки объединяются.</p>
-            <button type="submit" {% if not course.description and not course.topics %}disabled{% endif %}>Найти пять компетенций</button>
+            <button type="submit" {% if not course.description and not course.topics and not course.materials %}disabled{% endif %}>Найти пять компетенций</button>
             <span id="search-progress" role="status" hidden>Подбираем компетенции…</span>
         </form>
-        {% if not course.description and not course.topics %}<p class="hint">Сначала добавьте описание или темы дисциплины.</p>{% endif %}
+        {% if not course.description and not course.topics and not course.materials %}<p class="hint">Загрузите материалы или добавьте описание и темы дисциплины.</p>{% endif %}
     </div>
     {% if error %}<div class="card error" role="alert">{{ error }}</div>{% endif %}
     {% if search %}

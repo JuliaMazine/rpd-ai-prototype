@@ -7,21 +7,8 @@ from openai import OpenAI
 from app.models import Course
 from app.config import GenerationSettings
 from app.services import ollama_service
-from app.services.course_service import ASSESSMENT_LABELS
+from app.services.course_service import ASSESSMENT_LABELS, course_metadata_text
 from app.services.rpd_content_service import TeachingContent, content_prompt, parse_content, render_content, snapshot, terminology_index
-
-
-def course_metadata_text(course: Course) -> str:
-    return "\n".join([
-        f"Образовательная программа: {course.educational_program or 'уточняется'}",
-        f"Семестр: {course.semester or 'уточняется'}",
-        f"Академические часы: {course.total_hours or 'уточняется'} ({'общая трудоемкость подтверждена' if course.workload_confirmed else 'назначение часов не подтверждено'})",
-        f"Контактные часы: {course.contact_hours if course.contact_hours is not None else 'уточняются'}",
-        f"Самостоятельная работа, часов: {course.independent_hours if course.independent_hours is not None else 'уточняется'}",
-        f"Зачетные единицы: {course.credits if course.credits is not None else 'уточняется'}",
-        f"Форма промежуточной аттестации: {ASSESSMENT_LABELS.get(course.assessment_format, 'уточняется')}",
-        f"Темы / разделы дисциплины:\n{course.topics or 'уточняются'}",
-    ])
 
 
 def build_template_draft(course: Course, materials_text: str) -> str:
@@ -70,7 +57,7 @@ _______________________________        _______________
 
 Дисциплина опирается на ранее освоенные материалы образовательной программы и может использоваться при дальнейшем изучении профильных дисциплин, выполнении проектных, исследовательских и выпускных квалификационных работ.
 
-Коды компетенций не назначены: каталог компетенций пока не подключен.\n\nПеречень основных разделов дисциплины:
+Соотнесение результатов обучения с компетенциями образовательной программы: [заполнить по утвержденному каталогу].\n\nПеречень основных разделов дисциплины:
 {course.topics or "уточняется"}
 
 Преподавание дисциплины предусматривает следующие виды учебной работы: лекции, практические занятия, самостоятельная работа, консультации.
@@ -295,12 +282,20 @@ def build_rpd_prompt(course: Course, materials_text: str) -> str:
 logger = logging.getLogger(__name__)
 
 
-def generate_draft_text(course: Course, materials_text: str, metadata: dict | None = None) -> str:
+def generate_draft_text(course: Course, materials_text: str, metadata: dict | None = None, *, competencies: dict | None = None) -> str:
+    competencies = competencies or {"results": [], "warnings": ["Компетенции не выбраны. Заполните соответствия в черновике."], "status": "not_selected"}
+    if metadata is not None:
+        metadata["competencies"] = competencies
     fallback_draft = build_template_draft(course, materials_text)
+    if competencies.get("results"):
+        from app.services.competency_generation_service import MAPPING_HEADING, mapping_text
+        fallback_draft = fallback_draft.replace(
+            MAPPING_HEADING + " [заполнить по утвержденному каталогу].", mapping_text(None, competencies),
+        )
 
     def fallback(reason):
         if metadata is not None:
-            metadata.update({"version": 1, "status": "template", "warnings": [reason], "evidence": []})
+            metadata.update({"version": 1, "status": "template", "warnings": [reason] + metadata.get("competencies", {}).get("warnings", []), "evidence": []})
         return fallback_draft + "\n\n[Служебное примечание: " + reason + "]"
 
     try:
@@ -315,7 +310,7 @@ def generate_draft_text(course: Course, materials_text: str, metadata: dict | No
     if config.provider == "vsegpt" and (not config.api_key or not config.model):
         return fallback("VseGPT не использовался, потому что VSEGPT_API_KEY или VSEGPT_MODEL отсутствует в .env.")
 
-    prompt, source_names = content_prompt(course, materials_text)
+    prompt, source_names = content_prompt(course, materials_text, competencies)
     messages = [
         {"role": "system", "content": "Ты составляешь официальные рабочие программы дисциплин для российского университета. Ответ всегда на русском языке."},
         {"role": "user", "content": prompt},
@@ -338,7 +333,7 @@ def generate_draft_text(course: Course, materials_text: str, metadata: dict | No
             if not generated_text or not generated_text.strip():
                 return fallback(f"{provider_label} вернул пустой ответ; использован шаблонный черновик.")
             try:
-                content = parse_content(generated_text, source_names)
+                content = parse_content(generated_text, source_names, competencies)
             except ValueError as error:
                 if attempt:
                     return fallback("модель вернула неполные или некорректные учебные разделы после повторной проверки; использован шаблонный черновик.")
@@ -354,7 +349,13 @@ def generate_draft_text(course: Course, materials_text: str, metadata: dict | No
             if metadata is not None:
                 metadata.update(snapshot(course, content, source_names))
                 metadata.update(status="validated", attempts=attempt + 1)
-            return render_content(course, content, source_names)
+                metadata["warnings"].extend(competencies.get("warnings", []))
+                mapped_ids = {item.competency_id for item in content.competency_mappings}
+                unmapped = [" / ".join(item["codes"]) for item in competencies.get("results", []) if item["id"] not in mapped_ids]
+                if unmapped:
+                    metadata["warnings"].append("Проверьте соответствия для принятых компетенций: " + ", ".join(unmapped) + ". Модель не предложила обоснованных связей.")
+                metadata["competencies"]["mappings"] = [item.model_dump() for item in content.competency_mappings]
+            return render_content(course, content, source_names, competencies)
     except httpx.TimeoutException:
         return fallback("Ollama не завершила генерацию за отведенное время; использован шаблонный черновик.")
     except httpx.ConnectError:

@@ -26,6 +26,7 @@ from app.services.docx_service import (
 
 
 from app.web import templates
+from app.services.competency_generation_service import update_draft_mappings
 
 
 router = APIRouter()
@@ -95,6 +96,20 @@ def edit_draft_page(
     )
 
 
+@router.post("/ui/drafts/{draft_id}/competencies")
+async def ui_update_competencies(request: Request, draft_id: int, db: Session = Depends(get_db)):
+    _, draft = require_draft_teacher(request, db, draft_id)
+    if draft.status not in TEACHER_EDITABLE_STATUSES:
+        raise HTTPException(400, "Черновик в этом статусе нельзя редактировать.")
+    form = await request.form()
+    try:
+        update_draft_mappings(draft, form.getlist("mapping"))
+    except (ValueError, TypeError, KeyError) as error:
+        raise HTTPException(422, str(error)) from None
+    db.commit()
+    return RedirectResponse(url=f"/drafts/{draft.id}/view", status_code=303)
+
+
 @router.post("/ui/drafts/{draft_id}/edit")
 def ui_save_draft_edit(
     request: Request,
@@ -115,6 +130,8 @@ def ui_save_draft_edit(
         try:
             review = json.loads(draft.generation_metadata)
             review["edited"] = True
+            if review.get("competencies"):
+                review["competencies"]["reviewed"] = False
             draft.generation_metadata = json.dumps(review, ensure_ascii=False)
         except (ValueError, TypeError):
             pass
