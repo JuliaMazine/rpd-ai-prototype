@@ -254,3 +254,13 @@ def test_material_query_is_bounded_and_samples_multiple_files():
     assert len(query) < 16500
     assert 'END-FIRST' in query
     assert 'SECOND-FILE-CONTENT' in query
+
+
+def test_replacements_exclude_rejected_and_kept_competencies(catalogue, embedding_config, fake_encoder):
+    course = Course(description='Анализ данных')
+    first = search_competencies(course, catalogue=catalogue, config=embedding_config)
+    blocked = [entry['id'] for entry in first['results']]
+    remaining = search_competencies(course, catalogue=catalogue, config=embedding_config, exclude_ids=blocked, limit=2)
+    assert len(remaining['results']) == 2
+    assert not set(blocked) & {entry['id'] for entry in remaining['results']}
+    assert [entry['description'] for entry in remaining['results']] == [catalogue_row(i)['competence_description'] for i in [6, 7]]

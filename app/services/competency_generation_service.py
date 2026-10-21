@@ -6,7 +6,7 @@ from app.services.embedding_service import EmbeddingError
 MAPPING_HEADING = "Соотнесение результатов обучения с компетенциями образовательной программы:"
 
 
-def retrieve_for_generation(course, program_id=None):
+def retrieve_for_generation(course, program_id=None, *, exclude_ids=(), limit=5):
     program_id = program_id or course.catalogue_program_id
     snapshot = {"program_id": program_id, "results": [], "mappings": [], "warnings": [], "reviewed": False}
     try:
@@ -14,7 +14,8 @@ def retrieve_for_generation(course, program_id=None):
         program = next((item for item in catalogue.programs() if item["program_id"] == program_id), None)
         if program_id and program is None:
             raise ValueError("Выбранная программа отсутствует в каталоге.")
-        result = search_competencies(course, program_id, catalogue=catalogue)
+        options = {"exclude_ids": exclude_ids, "limit": limit} if exclude_ids or limit != 5 else {}
+        result = search_competencies(course, program_id, catalogue=catalogue, **options)
         snapshot.update(result, program=program, status="retrieved")
     except (CatalogueError, EmbeddingError, ValueError) as error:
         snapshot.update(status="unavailable", warnings=[f"Компетенции не подобраны: {error} Повторите подбор или продолжите без компетенций."])
@@ -130,8 +131,8 @@ def preview_token(course, competencies):
     })
 
 
-def accept_preview(course, program_id, token, selected_ids):
-    """Verify exactly what the teacher saw; never rerun ranking on Generate."""
+def read_preview(course, program_id, token):
+    """Validate the signed preview against the current retrieval inputs."""
     from itsdangerous import URLSafeTimedSerializer, BadData
     from app.config import settings
     try:
@@ -143,6 +144,31 @@ def accept_preview(course, program_id, token, selected_ids):
     competencies = payload["competencies"]
     if competencies["catalogue_fingerprint"] != load_catalogue().fingerprint:
         raise ValueError("Каталог изменился. Обновите предложения компетенций.")
+    return competencies
+
+
+def refresh_preview(course, program_id, token, selected_ids):
+    previous = read_preview(course, program_id, token)
+    selected = set(selected_ids)
+    allowed = {entry["id"] for entry in previous["results"]}
+    if not selected <= allowed:
+        raise ValueError("Можно сохранить только компетенции из текущих предложений.")
+    kept = [entry for entry in previous["results"] if entry["id"] in selected]
+    excluded = set(previous.get("excluded_ids", [])) | (allowed - selected)
+    if len(kept) == 5:
+        return previous
+    result = retrieve_for_generation(course, program_id, exclude_ids=excluded | selected, limit=5 - len(kept))
+    if result["status"] != "retrieved":
+        return result
+    replacements = result["results"]
+    result.update(results=kept + replacements, excluded_ids=sorted(excluded),
+                  replacements=len(replacements), exhausted=len(replacements) < 5 - len(kept))
+    return result
+
+
+def accept_preview(course, program_id, token, selected_ids):
+    """Verify exactly what the teacher saw; never rerun ranking on Generate."""
+    competencies = read_preview(course, program_id, token)
     allowed = {entry["id"] for entry in competencies["results"]}
     if not set(selected_ids) <= allowed:
         raise ValueError("Выбрана компетенция, которой нет среди предложений.")

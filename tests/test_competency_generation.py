@@ -333,3 +333,41 @@ def test_preview_without_saved_program_searches_whole_catalogue(sample_course, c
         result = retrieve_for_generation(sample_course)
     assert search.call_args.args[1] is None
     assert result['status'] == 'retrieved'
+
+
+def test_refresh_keeps_checked_replaces_unchecked_and_remembers_rejections(authenticated_client, mapped_draft, candidates):
+    from app.services.competency_generation_service import preview_token, read_preview
+    course = mapped_draft.course
+    all_entries = load_catalogue().competencies(candidates['program_id'])[:8]
+    original = {**candidates, 'results': all_entries[:5]}
+    token = preview_token(course, original)
+    keep_ids = [entry['id'] for entry in all_entries[:3]]
+    with patch('app.services.competency_generation_service.search_competencies', return_value={**candidates, 'results': all_entries[5:7]}) as search:
+        response = authenticated_client.post(f'/api/courses/{course.id}/generation-competencies', json={'token': token, 'selected_ids': keep_ids})
+    assert response.status_code == 200
+    result = response.json()
+    assert [entry['id'] for entry in result['results']] == keep_ids + [entry['id'] for entry in all_entries[5:7]]
+    assert search.call_args.kwargs['limit'] == 2
+    assert search.call_args.kwargs['exclude_ids'] == {entry['id'] for entry in all_entries[:5]}
+    saved = read_preview(course, candidates['program_id'], result['token'])
+    assert set(saved['excluded_ids']) == {entry['id'] for entry in all_entries[3:5]}
+    with patch('app.services.competency_generation_service.search_competencies', return_value={**candidates, 'results': all_entries[7:]}) as search:
+        next_result = authenticated_client.post(f'/api/courses/{course.id}/generation-competencies', json={'token': result['token'], 'selected_ids': keep_ids})
+    assert next_result.status_code == 200
+    assert next_result.json()['exhausted'] is True
+    assert search.call_args.kwargs['exclude_ids'] == {entry['id'] for entry in all_entries[:7]}
+    accepted = read_preview(course, candidates['program_id'], next_result.json()['token'])
+    assert len(accepted['results']) == 4
+
+
+def test_refresh_all_checked_is_noop_and_unknown_selection_rejected(mapped_draft, candidates):
+    from app.services.competency_generation_service import preview_token, refresh_preview
+    course = mapped_draft.course
+    candidates['results'] = load_catalogue().competencies(candidates['program_id'])[:5]
+    token = preview_token(course, candidates)
+    with patch('app.services.competency_generation_service.search_competencies') as search:
+        unchanged = refresh_preview(course, candidates['program_id'], token, [e['id'] for e in candidates['results']])
+        search.assert_not_called()
+    assert unchanged['results'] == candidates['results']
+    with pytest.raises(ValueError):
+        refresh_preview(course, candidates['program_id'], token, ['invented'])

@@ -12,7 +12,7 @@ from app.config import settings
 from app.services.material_service import save_material, generation_materials
 from app.services.llm_service import generate_draft_text
 from app.services.course_service import CourseInput, course_form
-from app.services.competency_generation_service import retrieve_for_generation, preview_token, accept_preview
+from app.services.competency_generation_service import retrieve_for_generation, preview_token, accept_preview, refresh_preview
 from app.services.competency_catalogue_service import CatalogueError
 from pydantic import BaseModel, Field
 
@@ -86,6 +86,8 @@ async def generation_program(request: Request):
 
 class GenerationPreviewInput(BaseModel):
     program_id: str | None = Field(default=None, max_length=100)
+    token: str = Field(default="", max_length=100000)
+    selected_ids: list[str] = Field(default_factory=list, max_length=5)
 
 
 @router.post("/api/courses/{course_id}/generation-competencies")
@@ -94,10 +96,13 @@ def generation_competencies(request: Request, course_id: int, data: GenerationPr
     course = db.get(Course, course_id)
     if course is None:
         raise HTTPException(404, "Дисциплина не найдена.")
-    result = retrieve_for_generation(course, data.program_id)
+    try:
+        result = refresh_preview(course, data.program_id or course.catalogue_program_id, data.token, data.selected_ids) if data.token else retrieve_for_generation(course, data.program_id)
+    except (ValueError, CatalogueError) as error:
+        raise HTTPException(422, str(error)) from None
     if result["status"] != "retrieved":
         raise HTTPException(503, " ".join(result["warnings"]))
-    return {"token": preview_token(course, result), "results": result["results"], "material_sources": result.get("material_sources", [])}
+    return {"token": preview_token(course, result), "results": result["results"], "material_sources": result.get("material_sources", []), "exhausted": result.get("exhausted", False)}
 
 
 @router.post("/ui/courses/{course_id}/generate-draft")

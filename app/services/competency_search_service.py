@@ -41,10 +41,11 @@ def course_query(course):
     return "\n\n".join(parts)
 
 
-def search_competencies(course, program_id=None, *, catalogue=None, config=None):
+def search_competencies(course, program_id=None, *, catalogue=None, config=None, exclude_ids=(), limit=TOP_K):
     query = course_query(course)
     catalogue = catalogue or load_catalogue()
-    entries = catalogue.competencies(program_id)
+    excluded = set(exclude_ids)
+    entries = [entry for entry in catalogue.competencies(program_id) if entry["id"] not in excluded]
     config = config or EmbeddingSettings.from_environment()
     if config.model.lower().startswith("qwen3-embedding"):
         query = "Instruct: Given uploaded university teaching materials and supplementary course information, retrieve educational competencies supported by the teaching content.\nQuery: " + query
@@ -72,6 +73,6 @@ def search_competencies(course, program_id=None, *, catalogue=None, config=None)
         score = sum(a * b for a, b in zip(query_vector, vectors[entry["id"]], strict=True))
         ranked.append({**entry, "score": max(-1.0, min(1.0, score))})
     ranked.sort(key=lambda entry: (-entry["score"], entry["id"]))
-    return {"results": ranked[:TOP_K], "catalogue_fingerprint": catalogue.fingerprint, "model": config.model,
+    return {"results": ranked[:limit], "catalogue_fingerprint": catalogue.fingerprint, "model": config.model,
             "model_digest": digest, "program_id": program_id, "candidates": len(entries),
             "material_sources": material_sources(course), "input_source": "uploaded_materials" if search_materials(course) else "course_fields"}
