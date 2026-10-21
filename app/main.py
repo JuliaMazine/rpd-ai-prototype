@@ -8,7 +8,7 @@ from app.localization import translate
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import APP_DIR, Settings, settings
-from app.routes import auth, course, dashboard, draft, review, user
+from app.routes import auth, competency, course, dashboard, draft, review, user
 from app.database import Base, engine
 from app.services.seed_service import seed_demo_data
 
@@ -33,7 +33,7 @@ def create_app(config: Settings = settings) -> FastAPI:
         https_only=config.secure_cookies,
     )
     application.mount('/static', StaticFiles(directory=str(APP_DIR / 'static')), name='static')
-    for module in (auth, user, dashboard, course, draft, review):
+    for module in (auth, user, dashboard, course, competency, draft, review):
         application.include_router(module.router)
     return application
 
