@@ -26,3 +26,6 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local embedding index
+.cache/

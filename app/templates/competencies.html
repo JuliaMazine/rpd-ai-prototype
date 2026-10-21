@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Подбор компетенций — {{ course.title }}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body { font-family: Arial, sans-serif; background: #f7f7f7; margin: 24px; color: #252525; }
+        main { max-width: 960px; margin: auto; }
+        .card { background: white; padding: 24px; border: 1px solid #ddd; margin: 18px 0; border-radius: 8px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        select { width: 100%; padding: 10px; box-sizing: border-box; }
+        button, .button-link { display: inline-block; padding: 10px 16px; margin-top: 14px; }
+        .hint { color: #555; font-size: 14px; line-height: 1.5; }
+        .error { border-left: 4px solid #b43a3a; }
+        .topics { white-space: pre-wrap; }
+        li { margin-bottom: 10px; }
+        details { margin-top: 12px; }
+        #search-progress { margin-left: 12px; }
+    </style>
+</head>
+<body><main>
+    <a href="/dashboard">← К дисциплинам</a>
+    <h1>Подбор компетенций</h1>
+    <div class="card">
+        <h2>{{ course.title }}</h2>
+        <p>{{ course.description or 'Описание пока не добавлено.' }}</p>
+        {% if course.topics %}<h3>Темы</h3><p class="topics">{{ course.topics }}</p>{% endif %}
+        <p class="hint">Поиск использует сохраненное описание и темы дисциплины. Изменить их можно на панели преподавателя.</p>
+        <form action="/ui/courses/{{ course.id }}/competencies/search" method="post" id="competency-search">
+            <label for="program_id">Образовательная программа</label>
+            <select name="program_id" id="program_id">
+                <option value="">Все программы из каталога</option>
+                {% for program in programs %}
+                <option value="{{ program.program_id }}" {% if program.program_id == program_id %}selected{% endif %}>{{ program.faculty }} · {{ program.education_level }} · {{ program.direction_code }} · {{ program.profile }}</option>
+                {% endfor %}
+            </select>
+            <p class="hint">Выберите программу дисциплины, чтобы искать только среди относящихся к ней компетенций. При поиске по всему каталогу одинаковые формулировки объединяются.</p>
+            <button type="submit" {% if not course.description and not course.topics %}disabled{% endif %}>Найти пять компетенций</button>
+            <span id="search-progress" role="status" hidden>Подбираем компетенции…</span>
+        </form>
+        {% if not course.description and not course.topics %}<p class="hint">Сначала добавьте описание или темы дисциплины.</p>{% endif %}
+    </div>
+    {% if error %}<div class="card error" role="alert">{{ error }}</div>{% endif %}
+    {% if search %}
+        <h2>Рекомендуемые компетенции</h2>
+        <p class="hint">Найдено: {{ search.results|length }}. Рекомендации нужно проверить преподавателю; они не назначаются дисциплине автоматически.</p>
+        {% for item in search.results %}
+        <section class="card" data-competency-id="{{ item.id }}">
+            <h3>{{ loop.index }}. {{ item.codes|join(' / ') }}</h3>
+            <p>{{ item.description }}</p>
+            <details><summary>Программы и коды в каталоге ({{ item.programs|length }})</summary>
+                <ul>{% for program in item.programs %}<li><strong>{{ program.competence_code }}</strong> — {{ program.faculty }}, {{ program.education_level }}, {{ program.direction_code }}, {{ program.profile }}</li>{% endfor %}</ul>
+            </details>
+        </section>
+        {% endfor %}
+    {% endif %}
+</main>
+<script>
+document.getElementById('competency-search').addEventListener('submit', function () {
+    this.querySelector('button').disabled = true;
+    document.getElementById('search-progress').hidden = false;
+});
+</script>
+</body></html>

@@ -113,3 +113,24 @@ Set `RPD_EXAMPLES_DIR` to a local folder of `.docx`, `.pdf`, `.txt`, or `.md` re
 ## Optional external provider
 
 VseGPT remains supported for older installations. To use it instead of Ollama, set `LLM_PROVIDER=vsegpt` and supply `VSEGPT_API_KEY`, `VSEGPT_MODEL`, and `VSEGPT_BASE_URL` (default: `https://api.vsegpt.ru/v1`). It is an external, potentially paid service; Ollama does not require these settings. The app never automatically switches from Ollama to VseGPT.
+
+
+## Competency search (SCRUM-5)
+
+Download the separate local embedding model once:
+
+```bash
+ollama pull qwen3-embedding:0.6b
+```
+
+From a course card, choose **Подобрать компетенции**. Search embeds the saved course description and topics and returns the five most similar competency descriptions from `data/competencies_NSU_MMF_FIT.csv`. Choose an educational program to restrict the catalogue; otherwise identical descriptions are grouped with their original program-specific codes. Search requires no uploaded material and makes no requests to VseGPT or a paid embedding API.
+
+The default model is `qwen3-embedding:0.6b`, served by Ollama at `OLLAMA_BASE_URL`. Override it with `OLLAMA_EMBEDDING_MODEL`. `EMBEDDING_TIMEOUT_SECONDS` controls each local request (1–600, default 120). Ollama uses available GPU acceleration. The first search builds document vectors in batches; subsequent searches reuse the SQLite cache at `COMPETENCY_EMBEDDING_CACHE` (default `.cache/competency_embeddings.sqlite3`, ignored by Git). Changes to a competency description, model digest, or server invalidate the corresponding cached vectors. Query vectors are not persisted. The ranking uses cosine similarity, which is not a confidence probability. Missing models, server errors, and invalid vectors produce an actionable error rather than fabricated results.
+
+Authenticated teacher-only endpoints:
+
+- `GET /courses/{id}/competencies` — search page.
+- `POST /ui/courses/{id}/competencies/search` — form with optional `program_id`.
+- `POST /api/courses/{id}/competencies/search` — JSON `{}` or `{"program_id": "NSU-ММФ-10"}`; returns ranked results, source catalogue fingerprint, and model digest.
+
+Search suggestions are not automatically accepted, saved to a course, or sent to the RPD generator. That acceptance flow is separate from this search feature. No application database migration is required.
