@@ -155,7 +155,9 @@ def refresh_preview(course, program_id, token, selected_ids):
         raise ValueError("Можно сохранить только компетенции из текущих предложений.")
     kept = [entry for entry in previous["results"] if entry["id"] in selected]
     excluded = set(previous.get("excluded_ids", [])) | (allowed - selected)
-    if len(kept) == 5:
+    if len(selected_ids) != len(selected):
+        raise ValueError("Компетенции не должны повторяться.")
+    if len(kept) >= 5:
         return previous
     result = retrieve_for_generation(course, program_id, exclude_ids=excluded | selected, limit=5 - len(kept))
     if result["status"] != "retrieved":
@@ -166,14 +168,20 @@ def refresh_preview(course, program_id, token, selected_ids):
     return result
 
 
-def accept_preview(course, program_id, token, selected_ids):
+def accept_preview(course, program_id, token, selected_ids, manual_codes=()):
     """Verify exactly what the teacher saw; never rerun ranking on Generate."""
+    from app.services.competency_selection_service import add_catalogue_entries
+    if not program_id:
+        raise ValueError("Выберите программу из каталога перед подтверждением компетенций.")
+    if len(selected_ids) != len(set(selected_ids)):
+        raise ValueError("Компетенции не должны повторяться.")
     competencies = read_preview(course, program_id, token)
     allowed = {entry["id"] for entry in competencies["results"]}
     if not set(selected_ids) <= allowed:
         raise ValueError("Выбрана компетенция, которой нет среди предложений.")
     competencies["suggested_results"] = competencies["results"]
     competencies["results"] = [entry for entry in competencies["results"] if entry["id"] in set(selected_ids)]
+    add_catalogue_entries(competencies, manual_codes, load_catalogue())
     competencies.update(status="accepted", accepted=True)
     if not competencies["results"]:
         competencies["warnings"].append("Преподаватель снял выбор всех компетенций. Соответствия нужно заполнить вручную.")

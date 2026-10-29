@@ -1,0 +1,23 @@
+<div class="top-bar">
+    <h1>Панель управления РПД</h1>
+
+    <p>Вы вошли как:<strong>{{ user.name }}</strong>
+        ({{ user.email }})
+    </p>
+
+    <p>Активная роль:<strong>{{ role_labels[active_role] }}</strong>
+    </p>
+
+    <p>
+        {% for role in user_roles %}
+            {% if role != active_role %}
+                <a class="button-link" href="/switch-role?role={{ role }}">
+                    Переключиться на {{ role_labels[role] }}
+                </a>
+            {% endif %}
+        {% endfor %}
+
+        <a class="button-link" href="/admin/users">Пользователи</a>
+        <a class="button-link" href="/logout">Выйти</a>
+    </p>
+</div>

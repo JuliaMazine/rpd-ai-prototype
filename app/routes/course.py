@@ -112,6 +112,8 @@ def ui_generate_draft(
     program_selection: tuple = Depends(generation_program),
     competency_token: str = Form(default="", max_length=100000),
     competency_ids: list[str] = Form(default=[]),
+    manual_codes: list[str] = Form(default=[]),
+    catalogue_token: str = Form(default="", max_length=100000),
     skip_competencies: bool = Form(default=False),
     db: Session = Depends(get_db),
 ):
@@ -133,19 +135,26 @@ def ui_generate_draft(
         raise HTTPException(422, "Некорректная программа.")
     program_id = (catalogue_program_id.strip() or None) if program_provided else course.catalogue_program_id
     competencies = {"program_id": program_id, "results": [], "mappings": [], "warnings": [], "status": "not_selected", "reviewed": False}
+    competency_token = competency_token or catalogue_token
     if skip_competencies:
         competencies.update(status="skipped", warnings=["Преподаватель продолжил без подбора компетенций. Заполните соответствия вручную."])
     elif program_id or competency_token:
         if not competency_token:
             raise HTTPException(422, "Дождитесь предложений компетенций или выберите генерацию без компетенций.")
         try:
-            competencies = accept_preview(course, program_id, competency_token, competency_ids)
+            competencies = accept_preview(course, program_id, competency_token, competency_ids, manual_codes)
         except (ValueError, CatalogueError) as error:
             raise HTTPException(422, str(error)) from None
     else:
-        if competency_ids or competency_token:
+        if competency_ids or competency_token or manual_codes:
             raise HTTPException(422, "Выберите программу для компетенций.")
         competencies["warnings"].append("Программа из каталога не выбрана. Компетенции нужно заполнить вручную.")
+    if program_id and "program" not in competencies:
+        from app.services.competency_catalogue_service import load_catalogue
+        try:
+            competencies["program"] = next(p for p in load_catalogue().programs() if p["program_id"] == program_id)
+        except (CatalogueError, StopIteration):
+            raise HTTPException(422, "Выбранная программа отсутствует в каталоге.") from None
     if program_provided:
         try:
             CourseInput(title=course.title, catalogue_program_id=program_id)

@@ -1,0 +1,10 @@
+<div class="card">
+    <h2>Сохраненный выбор компетенций этого РПД</h2>
+    {% if selection.snapshot %}
+    <p>Программа: {{ selection.snapshot.program_id or 'не выбрана' }}{% if selection.snapshot.program %} — {{ selection.snapshot.program.direction_name }}, {{ selection.snapshot.program.profile }}{% endif %}</p>
+    <ul>{% for entry in selection.snapshot.results %}<li><strong>{{ entry.codes | join(' / ') }}</strong> — {{ entry.description }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if selection.empty %}<p class="hint">Компетенции не выбраны. Перед отправкой на проверку проверьте этот выбор; допускается отправка без компетенций.</p>{% endif %}
+    {% for warning in selection.warnings %}<p class="hint" role="alert">{{ warning }}</p>{% endfor %}
+    <p class="hint">Выбор компетенций используется в матрице программы. Соответствия результатам обучения проверяются отдельно в тексте РПД.</p>
+</div>

@@ -107,6 +107,25 @@
     </div>
 {% endif %}
 
+{% include "competency_selection.html" %}
+{% if editor %}
+<div class="card">
+<h2>Изменить выбор компетенций</h2>
+<p>Программа: {{ editor.program_id }}. Сохранение обновляет таблицу компетенций в РПД и DOCX. Остальной текст сохраняется. Для новых компетенций соответствия результатам обучения нужно проверить вручную.</p>
+<form action="/ui/drafts/{{ draft.id }}/competency-selection" method="post">
+<input type="hidden" name="program_id" value="{{ editor.program_id }}">
+<input type="hidden" name="catalogue_fingerprint" value="{{ editor.catalogue_fingerprint }}">
+<details><summary>Весь каталог программы ({{ editor.entries | length }})</summary>
+{% for entry in editor.entries %}<label style="display:block;margin:12px 0"><input type="checkbox" name="competency_codes" value="{{ entry.codes[0] }}" {% if entry.codes[0] in editor.selected_codes %}checked{% endif %}> {{ entry.codes[0] }} — {{ entry.description }}</label>{% endfor %}
+</details>
+{% if selection.warnings and selection.expected_block %}
+<label><input type="checkbox" name="replace_table" value="true"> Заменить измененную вручную таблицу компетенций по сохраненному выбору и новым отметкам. Правки внутри этой таблицы будут удалены.</label>
+{% endif %}
+<button type="submit">Сохранить выбор компетенций</button>
+</form>
+</div>
+{% elif editor_error %}<p class="hint">{{ editor_error }}</p>{% endif %}
+
 <div class="card">
     <h2>Текст черновика</h2>
 

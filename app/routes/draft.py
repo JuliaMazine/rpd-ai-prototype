@@ -27,6 +27,8 @@ from app.services.docx_service import (
 
 from app.web import templates
 from app.services.competency_generation_service import update_draft_mappings
+from app.services.competency_selection_service import selection_context, selection_editor, update_draft_selection
+from app.services.competency_catalogue_service import CatalogueError
 
 
 router = APIRouter()
@@ -52,6 +54,7 @@ def view_draft_page(
             "draft": draft,
             "active_role": active_role,
             "generation_review": review,
+            "selection": selection_context(draft),
             "document_blocks": document_blocks(draft.content),
         },
     )
@@ -87,11 +90,19 @@ def edit_draft_page(
 ):
     _, draft = require_draft_teacher(request, db, draft_id)
 
+    editor, editor_error = None, None
+    try:
+        editor = selection_editor(draft)
+    except (ValueError, CatalogueError) as error:
+        editor_error = str(error)
     return templates.TemplateResponse(
         request=request,
         name="draft_edit.html",
         context={
             "draft": draft,
+            "selection": selection_context(draft),
+            "editor": editor,
+            "editor_error": editor_error,
         },
     )
 
@@ -148,6 +159,7 @@ def ui_save_draft_edit(
 def ui_submit_review(
     request: Request,
     draft_id: int,
+    confirm_empty: bool = Form(default=False),
     db: Session = Depends(get_db),
 ):
     _, draft = require_draft_teacher(request, db, draft_id)
@@ -157,6 +169,9 @@ def ui_submit_review(
             status_code=400,
             detail=f"Draft cannot be submitted in status {draft.status}",
         )
+
+    if selection_context(draft)['empty'] and not confirm_empty:
+        return templates.TemplateResponse(request=request, name="confirm_empty_selection.html", context={"draft": draft, "action": request.url.path})
 
     draft.status = STATUS_SUBMITTED_FOR_REVIEW
 
@@ -169,6 +184,7 @@ def ui_submit_review(
 def ui_resubmit_review(
     request: Request,
     draft_id: int,
+    confirm_empty: bool = Form(default=False),
     db: Session = Depends(get_db),
 ):
     _, draft = require_draft_teacher(request, db, draft_id)
@@ -179,6 +195,9 @@ def ui_resubmit_review(
             detail=f"Draft cannot be resubmitted in status {draft.status}",
         )
 
+    if selection_context(draft)['empty'] and not confirm_empty:
+        return templates.TemplateResponse(request=request, name="confirm_empty_selection.html", context={"draft": draft, "action": request.url.path})
+
     draft.status = STATUS_RESUBMITTED_FOR_REVIEW
 
     draft.feedback = None
@@ -186,3 +205,17 @@ def ui_resubmit_review(
     db.commit()
 
     return RedirectResponse(url="/dashboard", status_code=303)
+
+
+@router.post("/ui/drafts/{draft_id}/competency-selection")
+async def ui_update_selection(request: Request, draft_id: int, db: Session = Depends(get_db)):
+    _, draft = require_draft_teacher(request, db, draft_id)
+    if draft.status not in TEACHER_EDITABLE_STATUSES:
+        raise HTTPException(400, "Черновик в этом статусе нельзя редактировать.")
+    form = await request.form()
+    try:
+        update_draft_selection(draft, form.getlist('competency_codes'), form.get('program_id'), form.get('catalogue_fingerprint'), form.get('replace_table') == 'true')
+    except (ValueError, TypeError, KeyError, CatalogueError) as error:
+        raise HTTPException(422, str(error)) from None
+    db.commit()
+    return RedirectResponse(url=f"/drafts/{draft.id}/edit", status_code=303)

@@ -70,6 +70,7 @@
         .rpd-bullet { padding-left: 20px; }
     </style>
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/competency-workflow.css">
 </head>
 <body>
 
@@ -101,6 +102,22 @@
         <span class="status">{{ status_labels.get(draft.status, draft.status) }}</span>
     </p>
 </div>
+
+{% if active_role == "USER_METHODIST" and draft.status in ["DRAFT_SUBMITTED_FOR_REVIEW", "DRAFT_RESUBMITTED_FOR_REVIEW"] %}
+<div class="card">
+    <h2>Проверка этого РПД</h2>
+    <ol class="review-checklist">
+        <li>Сверьте программу и сохраненный выбор компетенций ниже.</li>
+        <li>Проверьте, что содержание, результаты обучения и задания обосновывают этот выбор.</li>
+        <li>Верните конкретные замечания преподавателю или подтвердите проверку.</li>
+    </ol>
+    <div class="review-start">
+        <a href="/drafts/{{ draft.id }}/feedback">Оставить замечания и вернуть →</a>
+        <form action="/ui/drafts/{{ draft.id }}/validate" method="post"><button type="submit">Подтвердить проверку РПД</button></form>
+    </div>
+</div>
+{% endif %}
+{% include "competency_selection.html" %}
 
 {% if draft.feedback %}
     <div class="card">
