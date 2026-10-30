@@ -117,35 +117,14 @@
         }
     </style>
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/competency-workflow.css">
 </head>
 <body>
 
 
 
 
-<div class="top-bar">
-    <h1>Панель управления РПД</h1>
-
-    <p>Вы вошли как:<strong>{{ user.name }}</strong>
-        ({{ user.email }})
-    </p>
-
-    <p>Активная роль:<strong>{{ role_labels[active_role] }}</strong>
-    </p>
-
-    <p>
-        {% for role in user_roles %}
-            {% if role != active_role %}
-                <a class="button-link" href="/switch-role?role={{ role }}">
-                    Переключиться на {{ role_labels[role] }}
-                </a>
-            {% endif %}
-        {% endfor %}
-
-        <a class="button-link" href="/admin/users">Пользователи</a>
-        <a class="button-link" href="/logout">Выйти</a>
-    </p>
-</div>
+{% include "account_header.html" %}
 
 
 {% if active_role == role_teacher %}
@@ -306,11 +285,15 @@
 
     <div class="card">
         <h2>Панель методиста</h2>
-        <p>Вы можете проверять черновики РПД, оставлять замечания, возвращать черновики преподавателю или подтверждать проверку.</p>
+        <div class="review-start">
+            <div><p>Начните с РПД, которые преподаватели отправили на проверку. Откройте документ, проверьте выбор компетенций и результаты обучения, затем подтвердите проверку или верните замечания.</p></div>
+            <a class="button-link" href="/programmes/competency-matrix">Матрица компетенций программы →</a>
+        </div>
+        <p class="small">Матрица — общий обзор: какие компетенции выбраны в дисциплинах и какие ещё никому не назначены. Выбор меняет преподаватель в своём РПД.</p>
     </div>
 
     <div class="card">
-        <h2>Черновики для проверки</h2>
+        <h2 id="review-inbox">РПД для проверки</h2>
 
         {% if inbox_drafts %}
             <table>
@@ -360,7 +343,7 @@
                 {% endfor %}
             </table>
         {% else %}
-            <p class="empty">Нет черновиков, ожидающих проверки.</p>
+            <p>Пока нет РПД для проверки. Они появятся здесь, когда преподаватель нажмёт «Отправить на проверку» в своём черновике.</p>
         {% endif %}
     </div>
 

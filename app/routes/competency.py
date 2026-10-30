@@ -1,9 +1,10 @@
 """Teacher-owned course competency search; suggestions are not accepted automatically."""
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.auth import require_course_teacher
+from app.auth import require_course_teacher, require_role, get_user_roles
 from app.database import get_db
 from app.models import Course
 from app.services.competency_catalogue_service import CatalogueError, load_catalogue
@@ -62,3 +63,44 @@ def api_search_competencies(request: Request, course_id: int, data: SearchInput,
         raise HTTPException(422, str(error)) from None
     except (CatalogueError, EmbeddingError) as error:
         raise HTTPException(503, str(error)) from None
+
+
+@router.get("/api/courses/{course_id}/competency-catalogue")
+def generation_catalogue(request: Request, course_id: int, db: Session = Depends(get_db)):
+    from app.services.competency_selection_service import catalogue_entries
+    from app.services.competency_generation_service import preview_token
+    course = owned_course(request, course_id, db)
+    try:
+        catalogue = load_catalogue()
+        entries = catalogue_entries(catalogue, course.catalogue_program_id)
+        snapshot = {"program_id": course.catalogue_program_id,
+                    "program": next(p for p in catalogue.programs() if p["program_id"] == course.catalogue_program_id),
+                    "catalogue_fingerprint": catalogue.fingerprint, "results": [], "warnings": [], "mappings": []}
+        return {"entries": entries, "token": preview_token(course, snapshot)}
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None
+    except CatalogueError as error:
+        raise HTTPException(503, str(error)) from None
+
+
+@router.get("/programmes/competency-matrix")
+def competency_matrix(request: Request, program_id: str = "", unassigned_only: bool = False, db: Session = Depends(get_db)):
+    from app.constants import ROLE_METHODIST
+    from app.services.competency_matrix_service import programme_matrix
+    user = require_role(request, db, ROLE_METHODIST)
+    try:
+        catalogue = load_catalogue()
+        programs = catalogue.programs()
+        course_counts = dict(db.query(Course.catalogue_program_id, func.count(Course.id))
+                             .group_by(Course.catalogue_program_id).all())
+        # Start with a programme containing courses; explicit empty programmes remain selectable.
+        program_id = program_id or max(programs, key=lambda p: course_counts.get(p['program_id'], 0))['program_id']
+        matrix = programme_matrix(db, catalogue, program_id, unassigned_only)
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from None
+    except CatalogueError as error:
+        raise HTTPException(503, str(error)) from None
+    return templates.TemplateResponse(request=request, name="competency_matrix.html", context={
+        "user": user, "user_roles": get_user_roles(user), "active_role": ROLE_METHODIST,
+        "programs": programs, "program_id": program_id, "unassigned_only": unassigned_only,
+        "course_counts": course_counts, "courses_without_program": course_counts.get(None, 0), **matrix})

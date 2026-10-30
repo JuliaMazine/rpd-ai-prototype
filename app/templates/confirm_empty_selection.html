@@ -1,0 +1,7 @@
+<!DOCTYPE html>
+<html lang="ru"><head><title>Отправка без компетенций</title><link rel="stylesheet" href="/static/styles.css"></head>
+<body><main class="card"><h1>Компетенции не выбраны</h1>
+<p>В РПД «{{ draft.name }}» нет сохраненного выбора компетенций. Вы можете вернуться к редактированию или отправить его без компетенций.</p>
+<a href="/drafts/{{ draft.id }}/edit">Вернуться к редактированию</a>
+<form action="{{ action }}" method="post"><input type="hidden" name="confirm_empty" value="true"><button type="submit">Отправить без компетенций</button></form>
+</main></body></html>

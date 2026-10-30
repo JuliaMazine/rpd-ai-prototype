@@ -378,6 +378,7 @@ class TestDraftRoutes:
 
         response = client.post(
             f"/ui/drafts/{draft.id}/submit-review",
+            data={"confirm_empty": "true"},
             follow_redirects=False,
         )
         assert response.status_code == 303

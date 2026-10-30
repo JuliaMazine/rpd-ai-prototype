@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Матрица компетенций — РПД</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/competency-workflow.css">
+</head>
+<body class="workflow-page">
+{% include "account_header.html" %}
+
+<div class="card">
+    <h2>Матрица компетенций программы</h2>
+    <div class="review-start">
+        <p>Здесь видно, какие компетенции выбраны в дисциплинах программы и какие ещё никому не назначены.</p>
+        <a class="button-link" href="/dashboard#review-inbox">К проверке РПД</a>
+    </div>
+    <details>
+        <summary>Как здесь появляются отметки</summary>
+        <ol class="review-checklist">
+            <li>Преподаватель указывает программу дисциплины, выбирает компетенции и отправляет РПД на проверку.</li>
+            <li>Методист открывает РПД и проверяет выбор. Подтверждает проверку или возвращает замечания.</li>
+            <li>Матрица показывает выбор из отправленного РПД. Статус над столбцом показывает, завершена ли проверка.</li>
+        </ol>
+        <p>Выбор меняет преподаватель в РПД. Чтобы запросить исправления, откройте РПД для проверки.</p>
+    </details>
+</div>
+
+    <section class="card" aria-label="Выбор программы">
+        <h2>Выбор программы</h2>
+        <form method="get" class="matrix-filters">
+            <div class="matrix-program-field">
+                <label for="matrix-program">Образовательная программа</label>
+                <select id="matrix-program" name="program_id">
+                    {% for program in programs %}
+                    <option value="{{ program.program_id }}" {% if program.program_id == program_id %}selected{% endif %}>{{ program.program_id }} — {{ program.direction_name }}, {{ program.profile }} · дисциплин: {{ course_counts.get(program.program_id, 0) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit">Показать программу</button>
+            <label class="matrix-checkbox"><input type="checkbox" name="unassigned_only" value="true" {% if unassigned_only %}checked{% endif %}> Только неназначенные компетенции</label>
+        </form>
+        <p class="matrix-summary">Дисциплин: <strong>{{ stats.courses }}</strong> ·
+            С РПД для учета в матрице: <strong>{{ stats.submitted }}</strong> ·
+            Компетенций выбрано: <strong>{{ stats.assigned }} из {{ stats.competencies }}</strong> ·
+            Без назначений: <strong>{{ stats.unassigned }}</strong>
+        </p>
+    </section>
+
+    {% if courses_without_program %}
+    <aside class="card"><div class="hint"><strong>Есть дисциплины без программы каталога: {{ courses_without_program }}.</strong> Они пока не входят в матрицу. Преподавателю нужно выбрать «Программу из каталога компетенций» в сведениях о дисциплине.</div></aside>
+    {% endif %}
+
+    {% if not columns %}
+    <section class="card matrix-empty" aria-labelledby="matrix-empty-title">
+        <h2 id="matrix-empty-title">В этой программе пока нет дисциплин</h2>
+        <p>Поэтому здесь ещё нет столбцов и отметок. Выберите другую программу или попросите преподавателя связать дисциплину с этой программой.</p>
+        <div class="matrix-next-step"><strong>Что нужно сделать преподавателю</strong><p>Панель преподавателя → дисциплина → «Изменить сведения о дисциплине» → программа из каталога → сохранить. Затем выбрать компетенции в РПД и отправить его на проверку.</p></div>
+        <a href="/dashboard#review-inbox">Перейти к проверке РПД →</a>
+    </section>
+    {% endif %}
+
+    <section class="card matrix-panel" aria-labelledby="matrix-title">
+        {% if not columns %}<details class="matrix-catalogue"><summary>Посмотреть каталог программы · {{ stats.competencies }} компетенций</summary>{% endif %}
+        <div class="matrix-table-heading">
+            <div><h2 id="matrix-title">{% if columns %}Компетенции × дисциплины{% else %}Каталог программы{% endif %}</h2><p>{% if columns %}Нажмите на ссылку РПД над столбцом, чтобы увидеть сохраненный выбор.{% else %}Все компетенции этой программы. Назначений пока нет.{% endif %}</p></div>
+            {% if columns %}<span class="matrix-legend"><span class="matrix-check" aria-hidden="true">✓</span> Выбрана в РПД</span>{% endif %}
+        </div>
+        {% if rows %}
+        <div class="matrix-scroll" role="region" aria-label="Матрица компетенций" tabindex="0">
+            <table class="competency-grid">
+                <caption class="visually-hidden">Выбор компетенций по дисциплинам программы {{ program_id }}</caption>
+                <thead><tr>
+                    <th scope="col" class="matrix-first-column">Компетенция <span class="matrix-heading-note">Нажмите на формулировку, чтобы раскрыть её</span></th>
+                    {% for column in columns %}
+                    <th scope="col" class="matrix-course-column">
+                        <span class="matrix-course-title">{{ column.course.title }}</span>
+                        {% if column.draft %}
+                        <a class="matrix-source" href="/drafts/{{ column.draft.id }}/view">Открыть РПД № {{ column.draft.id }} ↗</a>
+                        <span class="status matrix-draft-status">{{ status_labels.get(column.draft.status, column.draft.status) }}</span>
+                        {% endif %}
+                        {% if column.state == 'no_draft' %}<span class="matrix-column-note">Ждем отправки РПД преподавателем</span>
+                        {% elif column.state == 'missing' %}<span class="matrix-column-note">В РПД не сохранен выбор компетенций</span>
+                        {% elif column.state == 'empty' %}<span class="matrix-column-note">Преподаватель сохранил пустой выбор</span>
+                        {% elif column.state == 'incompatible' %}<span class="matrix-column-note">Программа изменилась. Нужен повторный выбор.</span>{% endif %}
+                    </th>
+                    {% endfor %}
+                </tr></thead>
+                <tbody>{% for row in rows %}<tr>
+                    <th scope="row" class="matrix-first-column">
+                        <span class="matrix-code">{{ row.entry.codes | join(' / ') }}</span>
+                        {% if not row.assigned %}<span class="matrix-unassigned">Без назначений</span>{% endif %}
+                        <details class="matrix-description"><summary><span>{{ row.entry.description }}</span></summary><p>{{ row.entry.description }}</p></details>
+                    </th>
+                    {% for checked in row.cells %}<td>{% if checked %}<span class="matrix-check" aria-label="Выбрана">✓</span>{% endif %}</td>{% endfor %}
+                </tr>{% endfor %}</tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="matrix-filter-empty"><h3>Все компетенции уже выбраны</h3><p>В этой программе нет компетенций без назначений.</p><a href="/programmes/competency-matrix?program_id={{ program_id | urlencode }}">Показать всю матрицу →</a></div>
+        {% endif %}
+        {% if not columns %}</details>{% endif %}
+    </section>
+    <div class="card"><details><summary>Какие РПД учитываются в матрице</summary><p class="matrix-footnote">Матрица учитывает последнее отправленное или проверенное РПД каждой дисциплины. Черновики в работе и возвращенные с замечаниями не учитываются; при возврате используется предыдущее подходящее РПД, если оно есть. Отметка показывает выбор компетенции, а не её достижение студентами.</p></details></div>
+</body>
+</html>
