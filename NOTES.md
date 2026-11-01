@@ -54,3 +54,22 @@ The MVP should demonstrate that using the system can substantially reduce the ti
 | Tehreem Kamal    | System Analyst, Data Analyst, QA |
 | 1st year student | ?                                |
 | 1st year student | ?                                |
+
+## MoSCoW Prioritization
+
+| Priority | Features |
+|---|---|
+| **Must have** | Course information form; programme competency catalogue and selection; AI competency recommendations; generation using an existing RPD template; draft review and editing; editable document download. |
+| **Should have** | DOCX export; brief explanations for competency recommendations. |
+| **Could have** | Input examples and help text; additional document formatting polish. |
+| **Won’t have** | University system integration; automatic data extraction; support for all programmes; official approval/signing; collaborative editing; version control and complex approval workflows. |
+
+## User Stories
+
+| ID | User story | Acceptance criteria |
+|---|---|---|
+| US1 | As a teacher, I want to enter course information so that the system can prepare a relevant RPD. | The form accepts course name, programme, semester, workload/credits, assessment format, and description/topics. |
+| US2 | As a teacher, I want competency suggestions so that I can select suitable competencies more quickly. | Suggestions come from the selected programme’s catalogue; I can accept, reject, or manually select competencies. |
+| US3 | As a teacher, I want to generate an RPD draft so that I spend less time writing it. | The draft follows the agreed template and includes the required sections, entered metadata, and selected competencies. |
+| US4 | As a teacher, I want to edit the draft so that I can correct and adapt its content. | Generated sections are editable, and my changes appear in the downloaded document. |
+| US5 | As a teacher, I want to download an editable RPD so that I can continue working with it. | The file opens in a compatible document editor and preserves the draft’s content and structure. |
