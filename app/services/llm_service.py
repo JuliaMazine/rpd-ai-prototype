@@ -1,4 +1,5 @@
 import logging
+import json
 
 import httpx
 
@@ -8,7 +9,7 @@ from app.models import Course
 from app.config import GenerationSettings
 from app.services import ollama_service
 from app.services.course_service import ASSESSMENT_LABELS, course_metadata_text
-from app.services.rpd_content_service import TeachingContent, content_prompt, parse_content, render_content, snapshot, terminology_index
+from app.services.rpd_content_service import AssessmentTaskError, TeachingContent, content_prompt, parse_content, render_content, snapshot, terminology_index
 
 
 def build_template_draft(course: Course, materials_text: str) -> str:
@@ -282,6 +283,24 @@ def build_rpd_prompt(course: Course, materials_text: str) -> str:
 logger = logging.getLogger(__name__)
 
 
+def task_repair_payload(error, raw):
+    """Limit a correction to tasks only when every reported error belongs there."""
+    if not hasattr(error, "errors"):
+        return None
+    errors = error.errors()
+    if not errors or not all(
+        (item["loc"] and item["loc"][0] == "assessment_tasks")
+        or isinstance(item.get("ctx", {}).get("error"), AssessmentTaskError)
+        for item in errors
+    ):
+        return None
+    try:
+        payload = json.loads(raw)
+    except (ValueError, TypeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def generate_draft_text(course: Course, materials_text: str, metadata: dict | None = None, *, competencies: dict | None = None) -> str:
     competencies = competencies or {"results": [], "warnings": ["Компетенции не выбраны. Заполните соответствия в черновике."], "status": "not_selected"}
     if metadata is not None:
@@ -316,10 +335,17 @@ def generate_draft_text(course: Course, materials_text: str, metadata: dict | No
         {"role": "user", "content": prompt},
     ]
     provider_label = "Ollama" if config.provider == "ollama" else "VseGPT"
+    if metadata is not None:
+        metadata["generation"] = {"provider": config.provider, "model": config.model, "attempts": []}
+    response_schema = TeachingContent.model_json_schema()
+    repair_payload = None
     try:
         for attempt in range(2):
             if config.provider == "ollama":
-                generated_text, truncated = ollama_service.generate(config, messages, response_schema=TeachingContent.model_json_schema())
+                metrics = {}
+                if metadata is not None:
+                    metadata["generation"]["attempts"].append(metrics)
+                generated_text, truncated = ollama_service.generate(config, messages, response_schema=response_schema, metrics=metrics)
             else:
                 with OpenAI(api_key=config.api_key, base_url=config.base_url, timeout=config.timeout, max_retries=0) as client:
                     response = client.chat.completions.create(
@@ -332,6 +358,19 @@ def generate_draft_text(course: Course, materials_text: str, metadata: dict | No
                 return fallback("достигнут лимит длины ответа; неполный ответ модели отклонен. Использован шаблонный черновик.")
             if not generated_text or not generated_text.strip():
                 return fallback(f"{provider_label} вернул пустой ответ; использован шаблонный черновик.")
+            if repair_payload is not None:
+                try:
+                    repaired = json.loads(generated_text)
+                except (ValueError, TypeError):
+                    repaired = None
+                if isinstance(repaired, dict):
+                    keys = set(repaired)
+                    full_schema = TeachingContent.model_json_schema()
+                    full_response = set(full_schema["required"]) <= keys <= set(full_schema["properties"])
+                    if keys == {"assessment_tasks"} or full_response:
+                        # Retain every other original field even if an older
+                        # transport ignores the narrower schema and returns all fields.
+                        generated_text = json.dumps({**repair_payload, "assessment_tasks": repaired["assessment_tasks"]}, ensure_ascii=False)
             try:
                 content = parse_content(generated_text, source_names, competencies)
             except ValueError as error:
@@ -341,9 +380,24 @@ def generate_draft_text(course: Course, materials_text: str, metadata: dict | No
                     details = "; ".join(f"{item['loc']}: {item['msg']}" for item in error.errors())
                 else:
                     details = str(error)
+                repair_payload = task_repair_payload(error, generated_text) if config.provider == "ollama" else None
+                if repair_payload is not None:
+                    full_schema = TeachingContent.model_json_schema()
+                    response_schema = {
+                        "type": "object", "additionalProperties": False,
+                        "properties": {"assessment_tasks": full_schema["properties"]["assessment_tasks"]},
+                        "required": ["assessment_tasks"], "$defs": full_schema["$defs"],
+                    }
+                    correction = (
+                        "Верни только JSON с одним полем assessment_tasks: полный исправленный массив заданий "
+                        f"для ВСЕХ {len(repair_payload.get('topics', []))} тем из предыдущего ответа. "
+                        "Сохрани порядок и номера тем. Остальные разделы приложение сохранит без изменений."
+                    )
+                else:
+                    correction = "Верни полный JSON по исходной схеме."
                 messages.extend([
                     {"role": "assistant", "content": generated_text},
-                    {"role": "user", "content": "Исправь JSON после проверки: " + details[:1500] + "\nТочные ID для терминов:\n" + terminology_index(source_names) + "\nВерни полный JSON по исходной схеме. Выбирай только существующие excerpt_id из исходных материалов. Не добавляй quote или text. Каждая тема должна иметь summary и задание. topic_index должен ссылаться на существующую тему. dataset содержит kind и description; method — конкретный изучаемый метод. knowledge начинается с Знать."},
+                    {"role": "user", "content": "Исправь JSON после проверки: " + details[:1500] + "\nТочные ID для терминов:\n" + terminology_index(source_names) + "\n" + correction + " Выбирай только существующие excerpt_id из исходных материалов. Не добавляй quote или text. Каждая тема должна иметь summary и задание. topic_index должен ссылаться на существующую тему. dataset содержит kind и description; method — конкретный изучаемый метод. knowledge начинается с Знать."},
                 ])
                 continue
             if metadata is not None:

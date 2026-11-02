@@ -1,0 +1,244 @@
+{
+  "$defs": {
+    "AssessmentTask": {
+      "additionalProperties": false,
+      "properties": {
+        "topic_index": {
+          "maximum": 6,
+          "minimum": 1,
+          "title": "Topic Index",
+          "type": "integer"
+        },
+        "dataset": {
+          "$ref": "#/$defs/Dataset"
+        },
+        "method": {
+          "maxLength": 160,
+          "minLength": 3,
+          "title": "Method",
+          "type": "string"
+        },
+        "exercise_type": {
+          "description": "prepare_data: очистка таблицы наблюдений; evaluate_predictions: только расчет метрик по истинным значениям и готовым предсказаниям; compare_methods: сравнение способов решения; apply_method: решение задачи конкретным методом, включая математические задачи со study_case. Не требуется использовать все типы заданий.",
+          "enum": [
+            "prepare_data",
+            "evaluate_predictions",
+            "compare_methods",
+            "apply_method"
+          ],
+          "title": "Exercise Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "topic_index",
+        "dataset",
+        "method",
+        "exercise_type"
+      ],
+      "title": "AssessmentTask",
+      "type": "object"
+    },
+    "CompetencyMapping": {
+      "additionalProperties": false,
+      "properties": {
+        "competency_id": {
+          "title": "Competency Id",
+          "type": "string"
+        },
+        "outcome_kind": {
+          "enum": [
+            "knowledge",
+            "skills"
+          ],
+          "title": "Outcome Kind",
+          "type": "string"
+        },
+        "outcome_index": {
+          "maximum": 6,
+          "minimum": 1,
+          "title": "Outcome Index",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "competency_id",
+        "outcome_kind",
+        "outcome_index"
+      ],
+      "title": "CompetencyMapping",
+      "type": "object"
+    },
+    "Dataset": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "description": "feature_table: таблица наблюдений с признаками; для обучения с учителем также нужна целевая переменная; classification_predictions/regression_predictions: истинные значения и готовые предсказания для расчета метрик; study_case: условия математической или иной учебной задачи без таблицы наблюдений.",
+          "enum": [
+            "feature_table",
+            "classification_predictions",
+            "regression_predictions",
+            "study_case"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 400,
+          "minLength": 20,
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "description"
+      ],
+      "title": "Dataset",
+      "type": "object"
+    },
+    "EvidenceRef": {
+      "additionalProperties": false,
+      "properties": {
+        "excerpt_id": {
+          "title": "Excerpt Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "excerpt_id"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "GroundedClaim": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "$ref": "#/$defs/EvidenceRef"
+        }
+      },
+      "required": [
+        "evidence"
+      ],
+      "title": "GroundedClaim",
+      "type": "object"
+    },
+    "TopicContent": {
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "maxLength": 180,
+          "minLength": 3,
+          "title": "Title",
+          "type": "string"
+        },
+        "summary": {
+          "maxLength": 900,
+          "minLength": 12,
+          "title": "Summary",
+          "type": "string"
+        },
+        "claims": {
+          "items": {
+            "$ref": "#/$defs/GroundedClaim"
+          },
+          "maxItems": 3,
+          "minItems": 0,
+          "title": "Claims",
+          "type": "array"
+        }
+      },
+      "required": [
+        "title",
+        "summary",
+        "claims"
+      ],
+      "title": "TopicContent",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "competency_mappings": {
+      "items": {
+        "$ref": "#/$defs/CompetencyMapping"
+      },
+      "maxItems": 60,
+      "title": "Competency Mappings",
+      "type": "array"
+    },
+    "objectives": {
+      "items": {
+        "maxLength": 900,
+        "minLength": 12,
+        "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 3,
+      "title": "Objectives",
+      "type": "array"
+    },
+    "knowledge": {
+      "items": {
+        "maxLength": 900,
+        "minLength": 12,
+        "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 3,
+      "title": "Knowledge",
+      "type": "array"
+    },
+    "skills": {
+      "items": {
+        "maxLength": 900,
+        "minLength": 12,
+        "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 3,
+      "title": "Skills",
+      "type": "array"
+    },
+    "topics": {
+      "items": {
+        "$ref": "#/$defs/TopicContent"
+      },
+      "maxItems": 6,
+      "minItems": 2,
+      "title": "Topics",
+      "type": "array"
+    },
+    "assessment_tasks": {
+      "items": {
+        "$ref": "#/$defs/AssessmentTask"
+      },
+      "maxItems": 6,
+      "minItems": 2,
+      "title": "Assessment Tasks",
+      "type": "array"
+    },
+    "assessment_criteria": {
+      "items": {
+        "maxLength": 900,
+        "minLength": 12,
+        "type": "string"
+      },
+      "maxItems": 6,
+      "minItems": 3,
+      "title": "Assessment Criteria",
+      "type": "array"
+    }
+  },
+  "required": [
+    "objectives",
+    "knowledge",
+    "skills",
+    "topics",
+    "assessment_tasks",
+    "assessment_criteria"
+  ],
+  "title": "TeachingContent",
+  "type": "object"
+}

@@ -3,7 +3,7 @@ import httpx
 
 from app.config import GenerationSettings
 
-def generate(config: GenerationSettings, messages: list[dict[str, str]], response_schema: dict | None = None) -> tuple[str, bool]:
+def generate(config: GenerationSettings, messages: list[dict[str, str]], response_schema: dict | None = None, *, metrics: dict | None = None) -> tuple[str, bool]:
     messages = [message.copy() for message in messages]
     # Qwen3 also supports this prompt switch on older Ollama/model templates.
     if config.model.lower().split(":", 1)[0] == "qwen3":
@@ -20,6 +20,7 @@ def generate(config: GenerationSettings, messages: list[dict[str, str]], respons
                 "messages": messages,
                 "stream": False,
                 "think": False,
+                "keep_alive": config.keep_alive_seconds,
                 "options": {
                     "temperature": 0.15,
                     "num_predict": config.max_tokens,
@@ -34,6 +35,13 @@ def generate(config: GenerationSettings, messages: list[dict[str, str]], respons
     message = data.get("message")
     if not isinstance(message, dict) or not isinstance(message.get("content"), str):
         raise ValueError("Ollama response has no text content")
+    if metrics is not None:
+        # Ollama durations are nanoseconds. Retain only nonnegative usage counters,
+        # never arbitrary response fields or content in performance metadata.
+        for key in ("total_duration", "load_duration", "prompt_eval_count", "prompt_eval_cached_count", "prompt_eval_duration", "eval_count", "eval_duration"):
+            value = data.get(key)
+            if type(value) is int and value >= 0:
+                metrics[key] = value
     return final_answer(message["content"]), data.get("done_reason") == "length"
 
 
