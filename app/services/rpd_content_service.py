@@ -13,6 +13,10 @@ from app.services.course_service import ASSESSMENT_LABELS, course_metadata_text
 from app.services.rpd_evidence_service import source_context, verify_reference
 
 Sentence = Annotated[str, Field(min_length=12, max_length=900)]
+
+class AssessmentTaskError(ValueError):
+    """A structurally valid response needs only its assessment tasks corrected."""
+
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -25,11 +29,13 @@ class GroundedClaim(StrictModel):
 class TopicContent(StrictModel):
     title: str = Field(min_length=3, max_length=180)
     summary: Sentence
-    claims: list[GroundedClaim] = Field(min_length=0, max_length=3)
+    claims: list[GroundedClaim] = Field(min_length=0, max_length=3, description="Только разные excerpt_id: один и тот же ID внутри темы не повторяется. Одного фрагмента достаточно, если он покрывает содержание темы.")
 
 class Dataset(StrictModel):
-    kind: Literal["feature_table", "classification_predictions", "regression_predictions", "study_case"]
-    description: str = Field(min_length=20, max_length=400)
+    kind: Literal["feature_table", "classification_predictions", "regression_predictions", "study_case"] = Field(
+        description="feature_table: таблица наблюдений с признаками; для обучения с учителем также нужна целевая переменная; classification_predictions/regression_predictions: истинные значения и готовые предсказания для расчета метрик; study_case: условия математической или иной учебной задачи без таблицы наблюдений."
+    )
+    description: str = Field(min_length=20, max_length=400, description="Состав и назначение предложенных учебных данных, без готовых ответов, цифр и фиксированных количеств. Для матриц и систем уравнений не задавай размеры, число строк или переменных: это определяет преподаватель.")
 
 DELIVERABLES = {
     "prepared_data": "Подготовленный набор данных с описанием выполненных преобразований.",
@@ -66,7 +72,9 @@ class AssessmentTask(StrictModel):
     topic_index: int = Field(ge=1, le=6)
     dataset: Dataset
     method: str = Field(min_length=3, max_length=160)
-    exercise_type: Literal["prepare_data", "evaluate_predictions", "compare_methods", "apply_method"]
+    exercise_type: Literal["prepare_data", "evaluate_predictions", "compare_methods", "apply_method"] = Field(
+        description="prepare_data: очистка таблицы наблюдений; evaluate_predictions: только расчет метрик по истинным значениям и готовым предсказаниям; compare_methods: сравнение способов решения; apply_method: решение задачи конкретным методом, включая математические задачи со study_case. Не требуется использовать все типы заданий."
+    )
 
 def has_numeric_answer(value):
     # F1, R2 and L2 are names; decimal answers, counts and thresholds are not.
@@ -94,17 +102,25 @@ class TeachingContent(StrictModel):
         if any(has_numeric_answer(value) for value in self.assessment_criteria):
             raise ValueError("Unsupported numerical grading criteria")
         if {task.topic_index for task in self.assessment_tasks} != set(range(1, len(self.topics) + 1)):
-            raise ValueError("Every topic must have an assessment task; topic_index must refer to an existing topic")
+            raise AssessmentTaskError("Every topic must have an assessment task; topic_index must refer to an existing topic")
         for topic in self.topics:
             if has_numeric_answer(topic.summary) or re.search(r"```|\bnp\.|\bprint\(|\bimport\s", topic.summary, re.I):
                 raise ValueError("Topic summary must describe study content without raw code or numerical answers")
         for task in self.assessment_tasks:
             if task.topic_index > len(self.topics):
-                raise ValueError("Assignment refers to an unknown topic")
+                raise AssessmentTaskError("Assignment refers to an unknown topic")
             if task.exercise_type == "evaluate_predictions" and task.dataset.kind not in {"classification_predictions", "regression_predictions"}:
-                raise ValueError("Evaluating predictions requires true targets and predictions, not just a feature table")
-            if has_numeric_answer(task.dataset.description) or has_numeric_answer(task.method):
-                raise ValueError("Describe proposed teaching data without numerical answers or fixed quantities")
+                raise AssessmentTaskError(
+                    f"Task for topic_index={task.topic_index}: evaluate_predictions requires true targets and predictions "
+                    f"(classification_predictions or regression_predictions), but dataset.kind={task.dataset.kind}. "
+                    "For a task that does not calculate prediction metrics, choose apply_method, compare_methods or prepare_data to match the topic."
+                )
+            for field, value in (("dataset.description", task.dataset.description), ("method", task.method)):
+                if has_numeric_answer(value):
+                    raise AssessmentTaskError(
+                        f"Задание topic_index={task.topic_index}, поле {field}: убери числовые ответы и фиксированные количества. "
+                        "Не задавай размеры матрицы, число строк или переменных. Опиши состав данных словами без цифр; размеры определит преподаватель."
+                    )
         return self
 
 def terminology_index(sources):
@@ -120,14 +136,17 @@ def content_prompt(course: Course, materials_text: str, competencies=None):
     context, sources = source_context(materials_text)
     examples = reference_examples(os.getenv("RPD_EXAMPLES_DIR", "").strip())
     instructions = """Подготовь учебную часть проекта РПД на русском языке. Верни только JSON по схеме.
+Верни компактный JSON в одну строку: без отступов, переносов строк и пробелов вне строковых
+значений. Внутри строк сохраняй обычные пробелы, пунктуацию и полное учебное содержание.
 СФОРМУЛИРУЙ конкретные цели и результаты обучения по учебным материалам, без «уточняется».
 Цели: объяснять, сравнивать, применять, обосновывать. Не используй «понять» или обещания
 разработать новые методы для вводного курса. knowledge — понятия; skills — глаголы в инфинитиве.
 Для каждой темы выбери 1–3 содержательных фрагмента в claims.evidence.excerpt_id.
+Один и тот же excerpt_id внутри темы записывай только один раз; не дублируй ссылки.
 Используй только ID, перечисленные ниже. Не придумывай ID, quote или claims.text.
 Для каждой темы напиши summary: связное описание СОДЕРЖАНИЯ изучения в стиле образца РПД.
-Например: «Обработка пропущенных значений. Сравнение способов заполнения пропусков.
-Выбор преобразования признаков с учетом ограничений исходных данных».
+Формулируй содержание только для данной дисциплины: изучаемые понятия, конкретные методы,
+их предпосылки, применение и ограничения. Не переноси темы других дисциплин.
 Это программа изучения, а не копия слайда: без кода, обрывков, определений, обещаний улучшения,
 числовых ответов и служебных ссылок. Используй только темы из выбранных фрагментов.
 knowledge: каждую строку начни «Знать ...», с грамматически согласованным дополнением.
@@ -147,12 +166,23 @@ knowledge: каждую строку начни «Знать ...», с грам�
 Выбери exercise_type по теме: prepare_data — подготовка данных; evaluate_predictions — оценка
 предсказаний; compare_methods — сравнение методов; apply_method — применение изученного метода.
 Для оценки предсказаний опиши набор истинных меток и предсказаний, для подготовки — таблицу признаков.
+Для обучения или применения модели нужны исходные признаки и, при обучении с учителем,
+целевая переменная: выбирай feature_table и явно опиши эти данные. Таблица готовых
+предсказаний не заменяет данные для обучения. Если задание состоит в расчете метрик
+по готовым предсказаниям, выбирай evaluate_predictions и назови метрики в method.
+Для математической или иной задачи без таблицы наблюдений выбирай study_case:
+опиши исходные объекты и условия задачи. Не добавляй пропуски, признаки, обучение
+моделей и метрики предсказаний, если они не относятся к дисциплине и выбранной теме.
+method — применимый способ решения, а не название теоретической классификации.
 Инструкции и ожидаемые результаты построит приложение. Не добавляй problem, steps, deliverables.
 Не выдумывай значения метрик, матриц ошибок, пороги, проценты, баллы и количественные ответы.
 В dataset.description описывай только состав и назначение данных, без чисел и готовых ответов.
+Не задавай размеры матриц, число переменных или строк таблицы: это определит преподаватель.
 Вычисления выполняет студент.
 Не утверждай механизм MCAR/MAR/MNAR по одной наблюдаемой таблице. Для учебного сравнения
 механизм пропусков задается в условии или вывод сопровождается оговоркой о предположениях.
+Сохраняй смысл ограничений из материалов в результатах обучения, темах и заданиях.
+Не подменяй обсуждение предположений обещанием определить ненаблюдаемый механизм.
 Не гарантируй, что заполнение пропусков не теряет информацию или масштабирование улучшает качество.
 Для accuracy и precision используй разные пояснения. Коды компетенций и их формулировки не придумывай.
 topic_index — номер СУЩЕСТВУЮЩЕЙ темы в массиве topics, начиная с 1. Это не номер задания.
@@ -165,7 +195,7 @@ topic_index — номер СУЩЕСТВУЮЩЕЙ темы в массиве t
         f"Дисциплина: {course.title}\nОписание: {course.description or ''}\nТемы преподавателя: {course.topics or 'выведи из материалов'}\nАттестация: {ASSESSMENT_LABELS.get(course.assessment_format, 'не задана')}",
         "Сведения преподавателя (не заменяй предположениями):\n" + course_metadata_text(course),
         "Программа из каталога (приоритетна для компетенций):\n" + json.dumps((competencies or {}).get("program", {}), ensure_ascii=False),
-        "Схема JSON:\n" + json.dumps(TeachingContent.model_json_schema(), ensure_ascii=False),
+        "Схема JSON:\n" + json.dumps(TeachingContent.model_json_schema(), ensure_ascii=False, separators=(",", ":")),
         "Образцы — ТОЛЬКО примеры стиля. НЕ переноси чужие темы, часы, программы, литературу и факты.\n" + (examples or "Образцы не заданы."),
         "Учебные фрагменты с проверяемыми ID:\n" + context,
         "Индекс терминов для выбора правильных оснований (не отдельный источник):\n" + terminology_index(sources),

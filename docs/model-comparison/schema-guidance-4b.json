@@ -1,0 +1,94 @@
+{
+  "started_at": "2026-11-02T07:54:36.788786+00:00",
+  "git_revision": "4ce1c243e61c9d0b7a5d4c43b7142771373bf379",
+  "input_sha256": "88ef9ab484ef4c30fa1380ec7befbb83d18458dbf5005b407827c4e1bf5f2352",
+  "settings": {
+    "timeout": 600,
+    "max_tokens": 4500,
+    "context_length": 16384,
+    "temperature": 0.15,
+    "think": false
+  },
+  "models": {
+    "qwen3:4b": {
+      "name": "qwen3:4b",
+      "model": "qwen3:4b",
+      "modified_at": "2026-10-03T17:42:22.764890635+07:00",
+      "size": 2497293931,
+      "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen3",
+        "families": [
+          "qwen3"
+        ],
+        "parameter_size": "4.0B",
+        "quantization_level": "Q4_K_M"
+      }
+    }
+  },
+  "results": [
+    {
+      "model": "qwen3:4b",
+      "case": "data-analysis",
+      "status": "validated",
+      "seconds": 10.4,
+      "attempts": [
+        {
+          "number": 1,
+          "truncated": false,
+          "response_chars": 4358,
+          "seconds": 10.38
+        }
+      ],
+      "topics": 3,
+      "evidence_references": 4,
+      "warnings": [
+        "Компетенции не выбраны. Заполните соответствия в черновике."
+      ],
+      "artifacts": "model-1/data-analysis"
+    },
+    {
+      "model": "qwen3:4b",
+      "case": "missing-data",
+      "status": "validated",
+      "seconds": 10.64,
+      "attempts": [
+        {
+          "number": 1,
+          "truncated": false,
+          "response_chars": 4735,
+          "seconds": 10.64
+        }
+      ],
+      "topics": 3,
+      "evidence_references": 5,
+      "warnings": [
+        "Компетенции не выбраны. Заполните соответствия в черновике."
+      ],
+      "artifacts": "model-1/missing-data"
+    },
+    {
+      "model": "qwen3:4b",
+      "case": "linear-algebra",
+      "status": "validated",
+      "seconds": 10.26,
+      "attempts": [
+        {
+          "number": 1,
+          "truncated": false,
+          "response_chars": 4385,
+          "seconds": 10.25
+        }
+      ],
+      "topics": 3,
+      "evidence_references": 4,
+      "warnings": [
+        "Компетенции не выбраны. Заполните соответствия в черновике."
+      ],
+      "artifacts": "model-1/linear-algebra"
+    }
+  ],
+  "limitations": "One run per case; structural validation and warnings are diagnostics, not a semantic quality score. Review saved drafts and source evidence manually. Timing includes cold loading and correction attempts."
+}

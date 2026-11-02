@@ -37,8 +37,9 @@ SEED_DEMO_DATA=true
 SECURE_COOKIES=false
 LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen3:4b
+OLLAMA_MODEL=qwen3:14b
 OLLAMA_CONTEXT_LENGTH=16384
+OLLAMA_KEEP_ALIVE_SECONDS=900
 LLM_TIMEOUT_SECONDS=600
 LLM_MAX_TOKENS=4500
 MAX_UPLOAD_MB=25
@@ -48,7 +49,7 @@ RPD_EXAMPLES_DIR=references/rpd_examples
 Install [Ollama](https://ollama.com/download) on the machine hosting the app. Start its server (`ollama serve` if it is not already running), then download the model:
 
 ```bash
-ollama pull qwen3:4b
+ollama pull qwen3:14b
 ollama list
 ```
 
@@ -95,7 +96,18 @@ PDF extraction reads the document text layer; image-only scans require OCR befor
 
 ## Local generation with Ollama
 
+To compare installed generation models on identical Russian RPD inputs, run:
+
+```bash
+ollama pull qwen3:14b
+.venv/bin/python scripts/compare_ollama_models.py --models qwen3:4b qwen3:14b
+```
+
+The configured generation model is `qwen3:14b`; `qwen3:4b` remains useful as a comparison baseline. This script uses the real generation, validation, correction, and rendering pipeline without editing `.env` or saving database records. Results go to a new timestamped directory under `.cache/rpd-comparison/`: requests, raw answers, rendered drafts, evidence metadata, model digests, runtime memory information, per-attempt Ollama timings/token counts, and a summary. Review the drafts for subject accuracy, source support, and task/data compatibility; passing validation is not a quality rating. The 14B download is about 9.3 GB; runtime memory also depends on context length. See [SCRUM-11 comparison notes](docs/model-comparison/README.md).
+
 Local generation uses Ollama's native `/api/chat` endpoint and needs no API key. It runs on the machine hosting the app; models must be downloaded there. Initial model loading and CPU generation may take several minutes. This setup disables thinking output and reserves a 16K context window for the prompt and answer. Set the timeout (1–3600 seconds), output limit (1–32768 tokens), and context length (512–131072 tokens) for the model and available memory. The current materials prompt is limited to 16,000 characters. Increase context if longer prompts or answers require it; this increases memory use.
+
+`OLLAMA_KEEP_ALIVE_SECONDS` keeps the generation model loaded after a request (0–3600, default 900 seconds) to reduce reloads during editing and regeneration. Ollama can still evict it when memory is needed. Requests ask for compact JSON to avoid spending output tokens on indentation; the rendered RPD retains normal formatting. The output cap, context budget, thinking setting, and validation remain unchanged. Saved `generation_metadata.generation` records the provider, model, and per-attempt timing/token counters; durations are in nanoseconds, matching [Ollama usage metrics](https://docs.ollama.com/api/usage). These diagnostics stay outside the RPD and DOCX.
 
 Use `LLM_PROVIDER=template` to disable AI requests. Keep `LLM_PROVIDER=ollama` explicitly set in `.env`; the legacy code default when this variable is omitted is still VseGPT. If the server is unavailable, the model is missing, the request times out, or the response is empty, the app returns a clearly marked template draft. Responses cut short by the output limit also produce a marked template fallback. No automatic switch to a paid service occurs.
 
@@ -106,7 +118,7 @@ The displayed upload limit and rejection message follow `MAX_UPLOAD_MB`. Compres
 
 RPD generation now requests structured teaching content and validates goals, learning outcomes, topic explanations, practical work, and assessment proposals before rendering the document. Administrative facts, workload, assessment format, and competency tables are rendered by the app. Every uploaded material gets part of the 16,000-character input budget, with excerpts spread over longer files. The model writes syllabus descriptions linked to selected excerpt IDs; the app retrieves exact source text for review. The saved draft keeps the excerpts, filenames, page/slide/cell locations, extracted-text offsets, and SHA-256 fingerprints. Source evidence is available in a collapsed section below the draft and stays outside the RPD text and DOCX. Automatic coverage diagnostics remain in saved generation metadata; they are not displayed as reviewer remarks. The document follows the supplied examples with a title page, full section headings, and tables for learning outcomes, workload, syllabus, and independent work. Editing a draft marks its evidence as belonging to the original generated version.
 
-Exercise instructions and expected deliverables are built by the app from task types and a named method. Every syllabus topic has an assessment task; prediction evaluation requires true targets and predictions. Each exercise uses one proposed teaching dataset, which the teacher must prepare; model-written numerical answers and free-form exercise steps are rejected. Reasonable teaching additions are allowed; missing source support becomes a review note rather than a generation failure. Structurally invalid responses receive one correction attempt, then a marked template fallback if validation still fails.
+Exercise instructions and expected deliverables are built by the app from task types and a named method. Every syllabus topic has an assessment task; prediction evaluation requires true targets and predictions. Each exercise uses one proposed teaching dataset, which the teacher must prepare; model-written numerical answers and free-form exercise steps are rejected. Reasonable teaching additions are allowed; missing source support becomes a review note rather than a generation failure. Structurally invalid responses receive one correction attempt, then a marked template fallback if validation still fails. For Ollama errors confined to assignments, only the assignment array is regenerated; the app retains the other sections and validates the complete merged result again. Other errors use a full correction. See [14B speed measurements](docs/model-comparison/speed.md).
 
 Coverage warnings flag missing deep-learning/NLP material and unmatched teacher topics, plus ambiguous workload hours. These are keyword checks, not a complete syllabus audit. Exact excerpts establish source provenance; teachers still need to verify source quality, topic relevance, proposed outcomes, and exercise suitability.
 

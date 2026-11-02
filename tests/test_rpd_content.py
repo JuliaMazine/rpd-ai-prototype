@@ -135,6 +135,24 @@ def test_expected_numeric_answers_cannot_enter_schema(teaching_payload, teaching
     with pytest.raises(ValueError):
         parse_content(json.dumps(teaching_payload), teaching_sources)
 
+
+@pytest.mark.parametrize("field,value", [
+    ("dataset.description", "Дана матрица 3×4 для исследования линейной независимости."),
+    ("method", "Метод с порогом 0.5"),
+])
+def test_numeric_correction_identifies_the_task_and_field(teaching_payload, teaching_sources, field, value):
+    task = teaching_payload["assessment_tasks"][0]
+    if field == "dataset.description":
+        task["dataset"]["description"] = value
+    else:
+        task["method"] = value
+    with pytest.raises(ValueError) as error:
+        parse_content(json.dumps(teaching_payload), teaching_sources)
+    message = str(error.value)
+    assert f"topic_index={task['topic_index']}" in message
+    assert field in message
+    assert "размеры определит преподаватель" in message
+
 def test_free_text_problem_cannot_switch_dataset(teaching_payload, teaching_sources):
     teaching_payload["assessment_tasks"][0]["problem"] = "Предскажите цены квартир по таблице продаж магазина."
     with pytest.raises(ValueError):

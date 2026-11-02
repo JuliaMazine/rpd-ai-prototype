@@ -1,0 +1,341 @@
+{
+  "started_at": "2026-11-02T08:22:01.721275+00:00",
+  "git_revision": "4ce1c243e61c9d0b7a5d4c43b7142771373bf379",
+  "input_sha256": "88ef9ab484ef4c30fa1380ec7befbb83d18458dbf5005b407827c4e1bf5f2352",
+  "source_sha256": {
+    "app/auth.py": "36f89fdff3f8127c56fe6d6601d385b90069ea09cc76b3f122f9583827c78f3e",
+    "app/config.py": "a3a3f6ab98895666918bb0c1809554c2023acf0117caf23ab89d2d544669da6a",
+    "app/constants.py": "b26a6ab755b2c7fda617d90e220a187f40b84258702a9cb2d6b01a8a145d7c10",
+    "app/database.py": "81be37eb73817481aec6136fe286fef4fa192df2c368410015ef1a7e911b4968",
+    "app/localization.py": "91f99f4d6f90aaaadcb14a2c90a9a3097736c663febee11049776ff6d9455176",
+    "app/main.py": "74dcb32368cc6dd621cd17f705373afa8f6231228a623a019ac427d7acada590",
+    "app/migrate.py": "cb4d809f563dbf8a3031269b1a7c0ecd1792a4f5716c286864076bc8208e8c5b",
+    "app/models.py": "feb674f9997f48ebe6eec77b3d33098e628bc5902d30bab3fa2146c9fcfa5a70",
+    "app/routes/__init__.py": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+    "app/routes/auth.py": "045337c8713fad1fedf73a418671e99c358d44927cb69755e506b1df8db7b519",
+    "app/routes/competency.py": "486ff990fe4cda7298294c6520a6d36930934fa0eace2399a74a159097d79e06",
+    "app/routes/course.py": "68ffb855f043057dd3f9a66a906ab7b7a8b2cf65032a1d43d893df1da0e38205",
+    "app/routes/dashboard.py": "52f8b746365f7a708069d68ae89bb094b502e9d65c80b1862b449ed061c2dfe3",
+    "app/routes/draft.py": "338a1646cb086f699aedbae1e650a103caea910ab2a69645255dbbec56b0192e",
+    "app/routes/review.py": "42742bc1ca847c444a496f782c2a81cfc9de8f1ba874c9db2afd879e05d39dde",
+    "app/routes/user.py": "6f93364e386629abe9dc1129ba9ea7182ecf9030a2eba321dccdc806d5861dbe",
+    "app/services/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "app/services/competency_catalogue_service.py": "eb0ae0f9ecddd9f98ac77c240170ba893484bcb1a571e2c57491cc1236729616",
+    "app/services/competency_generation_service.py": "c3cef1f4c079fc998c4e5409dd99655da2a66912244cfdcf1da731b51beab358",
+    "app/services/competency_matrix_service.py": "0dde6fbd1c35b89eb8dbe5d0cb50fa562562886375ca320fdc1daec632cce0b5",
+    "app/services/competency_search_service.py": "5fe08574601abe07994d42d70db5e7d4b109ffa7daa6bca433bd2bcc86d4b257",
+    "app/services/competency_selection_service.py": "2f6cff76121d182d57a092e0c830abdc2efd14312eeae8da943eb8a327aff113",
+    "app/services/course_service.py": "2b0c5d08b14aba81f5adbb02c5172c6717ab06337f0843829e19ff76ddda1ab9",
+    "app/services/document_view_service.py": "9e1864f955c236ebf09b2331cc0867f45f61fa73bae9da4155f9e825547dd126",
+    "app/services/docx_service.py": "a97baf4d1cb677a866a41ff180c142220c0ab67b3cb02138d9e10316d613a114",
+    "app/services/embedding_service.py": "f4d3b172599bea9f346638cf878aefbfdd300e2892bfd09deb1d2f7f4768bea6",
+    "app/services/llm_service.py": "2b448f33985509219a91b9a6741ac8f788cc157546d3569a971dbbacd9995a54",
+    "app/services/material_service.py": "73e713a111d897158a646952ec6c910c9aad57bd0792a6a46f23a25502f42164",
+    "app/services/ollama_service.py": "3407eae1d0ef2356f5c65bcfd8019448f69e3a4b25fefecc86fc4adbcf1ad592",
+    "app/services/rpd_content_service.py": "a038fc2ac2520ee4c6d2ddac8dc7f3efd88fc4dcf23bb61fe364d44184cb8b05",
+    "app/services/rpd_evidence_service.py": "bf3ceb2239ae823c270375ab26b91f5a0d36fff97523821d1b24d9e31f32190f",
+    "app/services/rpd_example_service.py": "be47fdcb9a34bd1f0541612239e6d8bc6d7d1bec2bb065b64cb84d9883df144f",
+    "app/services/seed_service.py": "92a1bf8ef411de4c1af8ab152294073680ebd5075379be66d4de0fe16f252b2d",
+    "app/services/text_extraction_service.py": "ccd340bf2f5456345946967d17e06978f40f7107cd1e174d11896413700a81e5",
+    "app/services/user_service.py": "bc8acb516d7ddb04b0326637dfeaf9529e094543f175f1fc8a7e6aa89074764b",
+    "app/web.py": "3d97dbe1eea3afa909df216eb888e7ca79a90f5645abdcada1d30b23dfe48610"
+  },
+  "settings": {
+    "timeout": 600,
+    "max_tokens": 4500,
+    "context_length": 16384,
+    "temperature": 0.15,
+    "think": false
+  },
+  "models": {
+    "qwen3:4b": {
+      "name": "qwen3:4b",
+      "model": "qwen3:4b",
+      "modified_at": "2026-10-03T17:42:22.764890635+07:00",
+      "size": 2497293931,
+      "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen3",
+        "families": [
+          "qwen3"
+        ],
+        "parameter_size": "4.0B",
+        "quantization_level": "Q4_K_M"
+      }
+    },
+    "qwen3:14b": {
+      "name": "qwen3:14b",
+      "model": "qwen3:14b",
+      "modified_at": "2026-11-02T15:22:01.062606773+07:00",
+      "size": 9276198565,
+      "digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen3",
+        "families": [
+          "qwen3"
+        ],
+        "parameter_size": "14.8B",
+        "quantization_level": "Q4_K_M"
+      }
+    }
+  },
+  "results": [
+    {
+      "model": "qwen3:4b",
+      "case": "data-analysis",
+      "status": "validated",
+      "seconds": 10.89,
+      "attempts": [
+        {
+          "number": 1,
+          "truncated": false,
+          "response_chars": 4241,
+          "seconds": 10.87
+        }
+      ],
+      "topics": 3,
+      "evidence_references": 4,
+      "warnings": [
+        "Компетенции не выбраны. Заполните соответствия в черновике."
+      ],
+      "artifacts": "model-1/data-analysis",
+      "runtime_models": [
+        {
+          "name": "qwen3:4b",
+          "model": "qwen3:4b",
+          "size": 5386744960,
+          "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen3",
+            "families": [
+              "qwen3"
+            ],
+            "parameter_size": "4.0B",
+            "quantization_level": "Q4_K_M"
+          },
+          "expires_at": "2026-11-02T15:27:12.607396054+07:00",
+          "size_vram": 5386744960,
+          "context_length": 16384
+        }
+      ]
+    },
+    {
+      "model": "qwen3:4b",
+      "case": "missing-data",
+      "status": "validated",
+      "seconds": 21.33,
+      "attempts": [
+        {
+          "number": 1,
+          "truncated": false,
+          "response_chars": 4622,
+          "seconds": 10.3
+        },
+        {
+          "number": 2,
+          "truncated": false,
+          "response_chars": 4626,
+          "seconds": 11.03
+        }
+      ],
+      "topics": 3,
+      "evidence_references": 5,
+      "warnings": [
+        "Компетенции не выбраны. Заполните соответствия в черновике."
+      ],
+      "artifacts": "model-1/missing-data",
+      "runtime_models": [
+        {
+          "name": "qwen3:4b",
+          "model": "qwen3:4b",
+          "size": 5386744960,
+          "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen3",
+            "families": [
+              "qwen3"
+            ],
+            "parameter_size": "4.0B",
+            "quantization_level": "Q4_K_M"
+          },
+          "expires_at": "2026-11-02T15:27:33.953436252+07:00",
+          "size_vram": 5386744960,
+          "context_length": 16384
+        }
+      ]
+    },
+    {
+      "model": "qwen3:4b",
+      "case": "linear-algebra",
+      "status": "validated",
+      "seconds": 9.68,
+      "attempts": [
+        {
+          "number": 1,
+          "truncated": false,
+          "response_chars": 4200,
+          "seconds": 9.68
+        }
+      ],
+      "topics": 3,
+      "evidence_references": 4,
+      "warnings": [
+        "Компетенции не выбраны. Заполните соответствия в черновике."
+      ],
+      "artifacts": "model-1/linear-algebra",
+      "runtime_models": [
+        {
+          "name": "qwen3:4b",
+          "model": "qwen3:4b",
+          "size": 5386744960,
+          "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen3",
+            "families": [
+              "qwen3"
+            ],
+            "parameter_size": "4.0B",
+            "quantization_level": "Q4_K_M"
+          },
+          "expires_at": "2026-11-02T15:27:43.647451461+07:00",
+          "size_vram": 5386744960,
+          "context_length": 16384
+        }
+      ]
+    },
+    {
+      "model": "qwen3:14b",
+      "case": "data-analysis",
+      "status": "validated",
+      "seconds": 28.25,
+      "attempts": [
+        {
+          "number": 1,
+          "truncated": false,
+          "response_chars": 4449,
+          "seconds": 28.24
+        }
+      ],
+      "topics": 3,
+      "evidence_references": 4,
+      "warnings": [
+        "Компетенции не выбраны. Заполните соответствия в черновике."
+      ],
+      "artifacts": "model-2/data-analysis",
+      "runtime_models": [
+        {
+          "name": "qwen3:14b",
+          "model": "qwen3:14b",
+          "size": 12170591360,
+          "digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen3",
+            "families": [
+              "qwen3"
+            ],
+            "parameter_size": "14.8B",
+            "quantization_level": "Q4_K_M"
+          },
+          "expires_at": "2026-11-02T15:28:11.907574539+07:00",
+          "size_vram": 12170591360,
+          "context_length": 16384
+        }
+      ]
+    },
+    {
+      "model": "qwen3:14b",
+      "case": "missing-data",
+      "status": "validated",
+      "seconds": 26.29,
+      "attempts": [
+        {
+          "number": 1,
+          "truncated": false,
+          "response_chars": 4604,
+          "seconds": 26.28
+        }
+      ],
+      "topics": 3,
+      "evidence_references": 6,
+      "warnings": [
+        "Компетенции не выбраны. Заполните соответствия в черновике."
+      ],
+      "artifacts": "model-2/missing-data",
+      "runtime_models": [
+        {
+          "name": "qwen3:14b",
+          "model": "qwen3:14b",
+          "size": 12170591360,
+          "digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen3",
+            "families": [
+              "qwen3"
+            ],
+            "parameter_size": "14.8B",
+            "quantization_level": "Q4_K_M"
+          },
+          "expires_at": "2026-11-02T15:28:38.209866248+07:00",
+          "size_vram": 12170591360,
+          "context_length": 16384
+        }
+      ]
+    },
+    {
+      "model": "qwen3:14b",
+      "case": "linear-algebra",
+      "status": "validated",
+      "seconds": 22.43,
+      "attempts": [
+        {
+          "number": 1,
+          "truncated": false,
+          "response_chars": 3662,
+          "seconds": 22.43
+        }
+      ],
+      "topics": 2,
+      "evidence_references": 3,
+      "warnings": [
+        "Компетенции не выбраны. Заполните соответствия в черновике."
+      ],
+      "artifacts": "model-2/linear-algebra",
+      "runtime_models": [
+        {
+          "name": "qwen3:14b",
+          "model": "qwen3:14b",
+          "size": 12170591360,
+          "digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+          "details": {
+            "parent_model": "",
+            "format": "gguf",
+            "family": "qwen3",
+            "families": [
+              "qwen3"
+            ],
+            "parameter_size": "14.8B",
+            "quantization_level": "Q4_K_M"
+          },
+          "expires_at": "2026-11-02T15:29:00.656565988+07:00",
+          "size_vram": 12170591360,
+          "context_length": 16384
+        }
+      ]
+    }
+  ],
+  "limitations": "One run per case; structural validation and warnings are diagnostics, not a semantic quality score. Review saved drafts and source evidence manually. Timing includes cold loading and correction attempts."
+}

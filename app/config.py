@@ -37,6 +37,7 @@ class GenerationSettings:
     timeout: float
     max_tokens: int
     context_length: int
+    keep_alive_seconds: int = 900
 
     @classmethod
     def from_environment(cls):
@@ -47,8 +48,11 @@ class GenerationSettings:
         timeout = float(os.getenv("LLM_TIMEOUT_SECONDS", "600" if provider == "ollama" else "90"))
         max_tokens = int(os.getenv("LLM_MAX_TOKENS", "4500"))
         context_length = int(os.getenv("OLLAMA_CONTEXT_LENGTH", "16384"))
+        keep_alive_seconds = int(os.getenv("OLLAMA_KEEP_ALIVE_SECONDS", "900"))
         if not 1 <= timeout <= 3600 or not 1 <= max_tokens <= 32768 or not 512 <= context_length <= 131072:
             raise ValueError("Generation limits are out of range")
+        if not 0 <= keep_alive_seconds <= 3600:
+            raise ValueError("OLLAMA_KEEP_ALIVE_SECONDS must be between 0 and 3600")
         if provider == "ollama":
             model = os.getenv("OLLAMA_MODEL", "").strip()
             base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434").strip().rstrip("/")
@@ -59,4 +63,4 @@ class GenerationSettings:
             api_key = os.getenv("VSEGPT_API_KEY", "").strip()
         if provider != "template" and not base_url.startswith(("http://", "https://")):
             raise ValueError("Generation base URL must use HTTP or HTTPS")
-        return cls(provider, model, base_url, api_key, timeout, max_tokens, context_length)
+        return cls(provider, model, base_url, api_key, timeout, max_tokens, context_length, keep_alive_seconds)
