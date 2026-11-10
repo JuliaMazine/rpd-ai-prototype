@@ -143,6 +143,13 @@ document.querySelectorAll('.generation-form').forEach((form) => {
     window.addEventListener('pageshow', (event) => {
         if (event.persisted) { generating = false; updateButton(); }
     });
-    loadCatalogue();
-    load();
+    let started = false;
+    function activate() {
+        if (started) return;
+        started = true;
+        loadCatalogue();
+        load();
+    }
+    form.addEventListener('generation:activate', activate);
+    if (!form.closest('[hidden]')) activate();
 });

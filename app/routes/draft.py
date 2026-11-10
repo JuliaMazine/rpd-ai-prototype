@@ -177,7 +177,7 @@ def ui_submit_review(
 
     db.commit()
 
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url=f"/dashboard#course-{draft.course_id}/drafts", status_code=303)
 
 
 @router.post("/ui/drafts/{draft_id}/resubmit-review")
@@ -204,7 +204,7 @@ def ui_resubmit_review(
 
     db.commit()
 
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url=f"/dashboard#course-{draft.course_id}/drafts", status_code=303)
 
 
 @router.post("/ui/drafts/{draft_id}/competency-selection")
@@ -218,4 +218,4 @@ async def ui_update_selection(request: Request, draft_id: int, db: Session = Dep
     except (ValueError, TypeError, KeyError, CatalogueError) as error:
         raise HTTPException(422, str(error)) from None
     db.commit()
-    return RedirectResponse(url=f"/drafts/{draft.id}/edit", status_code=303)
+    return RedirectResponse(url=f"/drafts/{draft.id}/edit#selection", status_code=303)

@@ -7,6 +7,7 @@ from app.services.course_service import ASSESSMENT_LABELS
 def russian_context(request):
     return {
         "t": translate,
+        "ui_role": request.session.get("active_role"),
         "role_labels": ROLE_LABELS,
         "status_labels": STATUS_LABELS,
         "assessment_labels": ASSESSMENT_LABELS,

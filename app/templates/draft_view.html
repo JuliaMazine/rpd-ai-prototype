@@ -72,13 +72,13 @@
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/competency-workflow.css">
 </head>
-<body>
+<body data-role="{{ ui_role or '' }}">
 
 
 
 
 <div class="actions">
-    <a class="button-link" href="/dashboard">К панели управления</a>
+    <a class="button-link" href="/dashboard{% if active_role == "USER_TEACHER" %}#course-{{ draft.course.id }}/drafts{% endif %}">К панели управления</a>
     <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
 
     {% if active_role == "USER_TEACHER" and draft.status in ["DRAFT_EDITING", "DRAFT_FEEDBACK_GIVEN"] %}

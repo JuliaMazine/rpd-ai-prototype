@@ -2,124 +2,12 @@
 <html lang="ru">
 <head>
     <title>Панель управления — РПД</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            background: #f7f7f7;
-        }
-
-        h1, h2, h3 {
-            color: #222;
-        }
-
-        .top-bar {
-            background: white;
-            border: 1px solid #ccc;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-
-        .card {
-            background: white;
-            border: 1px solid #ccc;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .course-card {
-            background: white;
-            border: 1px solid #ccc;
-            padding: 20px;
-            margin-bottom: 25px;
-        }
-
-        input, textarea {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 8px;
-            margin-top: 5px;
-            margin-bottom: 12px;
-        }
-
-        textarea {
-            min-height: 80px;
-        }
-
-        button {
-            padding: 7px 12px;
-            cursor: pointer;
-            margin-top: 4px;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            background: white;
-            margin-top: 10px;
-        }
-
-        th, td {
-            border: 1px solid #ccc;
-            padding: 8px;
-            vertical-align: top;
-            text-align: left;
-        }
-
-        th {
-            background: #eeeeee;
-        }
-
-        .button-link {
-            display: inline-block;
-            padding: 7px 10px;
-            background: #eeeeee;
-            border: 1px solid #999;
-            text-decoration: none;
-            color: black;
-            margin: 2px;
-        }
-
-        .button-link:hover {
-            background: #dddddd;
-        }
-
-        .status {
-            display: inline-block;
-            padding: 4px 8px;
-            border: 1px solid #999;
-            background: #f0f0f0;
-            font-size: 13px;
-            font-weight: bold;
-        }
-
-        .hint {
-            background: #fff9db;
-            border: 1px solid #d6c36a;
-            padding: 10px;
-            margin-top: 8px;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .small {
-            font-size: 13px;
-            color: #555;
-        }
-
-        .inline-form {
-            display: inline;
-        }
-
-        .empty {
-            color: #666;
-            font-style: italic;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/competency-workflow.css">
+    <link rel="stylesheet" href="/static/workflow.css">
 </head>
-<body>
+<body data-role="{{ ui_role or '' }}" class="dashboard-page">
 
 
 
@@ -129,13 +17,32 @@
 
 {% if active_role == role_teacher %}
 
-    <div class="card">
+    <div class="card workflow-intro">
         <h2>Панель преподавателя</h2>
-        <p>Вы можете создавать дисциплины, загружать материалы, создавать и редактировать черновики РПД, а затем отправлять их методисту на проверку.</p>
+        <p>Выберите дисциплину и пройдите шаги подготовки РПД.</p>
     </div>
-
-    <div class="card">
-        <h2>Создать дисциплину</h2>
+    <main class="workflow-shell" data-course-workflow>
+    <section class="card" data-screen="courses" aria-labelledby="courses-heading">
+        <div class="workflow-heading">
+            <div><h2 id="courses-heading" tabindex="-1">Ваши дисциплины</h2><p class="small">Сведения → материалы → компетенции → черновики</p></div>
+            <a class="button-link" href="#new">Создать дисциплину</a>
+        </div>
+        <div class="course-picker">
+        {% for course in courses %}
+            <a class="course-tile" href="#course-{{ course.id }}/{{ 'drafts' if course.drafts else ('competencies' if course.materials else 'details') }}">
+                <strong>{{ course.title }}</strong>
+                <span>{{ course.educational_program or 'Программа не указана' }}</span>
+                <span class="small">Материалы: {{ course.materials | length }} · Черновики: {{ course.drafts | length }}</span>
+                <span class="course-tile-action">Открыть дисциплину →</span>
+            </a>
+        {% else %}
+            <p class="empty">У вас пока нет дисциплин. Создайте первую, чтобы подготовить РПД.</p>
+        {% endfor %}
+        </div>
+    </section>
+    <section class="card" data-screen="new" aria-labelledby="new-heading">
+        <a href="#courses">← Все дисциплины</a>
+        <h2 id="new-heading" tabindex="-1">Создать дисциплину</h2>
 
         <form action="/ui/courses" method="post">
             {% with form_course=None %}
@@ -145,14 +52,21 @@
 
             <button type="submit">Создать дисциплину</button>
         </form>
-    </div>
-
-    <h2>Ваши дисциплины</h2>
+    </section>
 
     {% if courses %}
         {% for course in courses %}
-            <div class="course-card">
-                <h3>{{ course.title }}</h3>
+            <section class="course-card" data-screen="course-{{ course.id }}" data-course-id="{{ course.id }}">
+                <a href="#courses">← Все дисциплины</a>
+                <h2 tabindex="-1">{{ course.title }}</h2>
+                <nav class="workflow-steps" aria-label="Подготовка РПД">
+                    <a href="#course-{{ course.id }}/details" data-step="details">1. Сведения</a>
+                    <a href="#course-{{ course.id }}/materials" data-step="materials">2. Материалы <span>{{ course.materials | length }}</span></a>
+                    <a href="#course-{{ course.id }}/competencies" data-step="competencies">3. Компетенции</a>
+                    <a href="#course-{{ course.id }}/drafts" data-step="drafts">4. Черновики <span>{{ course.drafts | length }}</span></a>
+                </nav>
+                <div data-panel="details">
+                <h3 tabindex="-1">Сведения о дисциплине</h3>
 
                 {% if course.description %}
                     <p>{{ course.description }}</p>
@@ -183,7 +97,10 @@
 
                 <details><summary>Проверить подбор компетенций</summary><p><a class="button-link" href="/courses/{{ course.id }}/competencies">Открыть поиск по каталогу</a></p></details>
 
-                <h4>Загруженные материалы</h4>
+                <div class="step-actions"><a class="button-link" href="#course-{{ course.id }}/materials">Далее: материалы →</a></div>
+                </div>
+                <div data-panel="materials">
+                <h3 tabindex="-1">Загруженные материалы</h3>
 
                 {% if course.materials %}
                     <ul>
@@ -196,13 +113,16 @@
                 {% endif %}
 
                 <form action="/ui/courses/{{ course.id }}/materials" method="post" enctype="multipart/form-data">
-                    <label>Загрузить материал (.txt, .md, .pdf, .docx, .ipynb или .pptx)</label>
-                    <input type="file" name="file" accept=".txt,.md,.pdf,.docx,.ipynb,.pptx" required>
+                    <label>Загрузить материал (.txt, .md, .pdf, .docx, .ipynb или .pptx)
+                    <input type="file" name="file" accept=".txt,.md,.pdf,.docx,.ipynb,.pptx" required></label>
                     <p class="empty">До {{ max_upload_mb }} МиБ. PDF должен содержать текст; сканы нужно предварительно распознать. Документы Word — в формате .docx, презентации — .pptx. Из блокнотов .ipynb читаются текст и код без выполнения.</p>
                     <button type="submit">Загрузить материал</button>
                 </form>
 
-                <h4>Создание черновика</h4>
+                <div class="step-actions"><a href="#course-{{ course.id }}/details">← Сведения</a><a class="button-link" href="#course-{{ course.id }}/competencies">Далее: компетенции →</a></div>
+                </div>
+                <div data-panel="competencies">
+                <h3 tabindex="-1">Компетенции и создание черновика</h3>
                 <p class="empty">Черновики РПД создаются на русском языке.</p>
 
                 {% if course.materials %}
@@ -210,10 +130,13 @@
 
                     {% include "generation_form.html" %}
                 {% else %}
-                    <p class="empty">Перед созданием черновика загрузите хотя бы один материал.</p>
+                    <p class="empty">Перед созданием черновика загрузите хотя бы один материал.</p><a class="button-link" href="#course-{{ course.id }}/materials">Загрузить материал</a>
                 {% endif %}
 
-                <h4>Черновики</h4>
+                <div class="step-actions"><a href="#course-{{ course.id }}/materials">← Материалы</a><a class="button-link secondary" href="#course-{{ course.id }}/drafts">К черновикам →</a></div>
+                </div>
+                <div data-panel="drafts">
+                <h3 tabindex="-1">Черновики</h3>
 
                 {% if course.drafts %}
                     <table>
@@ -272,12 +195,12 @@
                 {% else %}
                     <p class="empty">Черновики пока не созданы.</p>
                 {% endif %}
-            </div>
+                </div>
+            </section>
         {% endfor %}
-    {% else %}
-        <p class="empty">У вас пока нет дисциплин.</p>
     {% endif %}
 
+    </main>
 {% endif %}
 
 
@@ -349,6 +272,8 @@
 
 {% endif %}
 
+<noscript><p class="small">Для пошаговой навигации включите JavaScript. Все формы доступны ниже.</p></noscript>
+<script src="/static/workflow.js" defer></script>
 <script src="/static/generation.js" defer></script>
 </body>
 </html>
