@@ -1,0 +1,15 @@
+    <article class="rpd-document">
+    {% for block in document_blocks %}
+        {% if block.kind == 'table' %}
+        <div class="rpd-table-wrap"><table class="rpd-table">
+            <thead><tr>{% for cell in block.headers %}<th>{{ cell }}</th>{% endfor %}</tr></thead>
+            <tbody>{% for row in block.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+        </table></div>
+        {% elif block.kind == 'title' %}<h2 class="rpd-title">{{ block.text }}</h2>
+        {% elif block.kind == 'heading' %}<h3>{{ block.text }}</h3>
+        {% elif block.kind == 'subheading' %}<h4>{{ block.text }}</h4>
+        {% elif block.kind == 'bullet' %}<p class="rpd-bullet">• {{ block.text }}</p>
+        {% else %}<p>{{ block.text }}</p>
+        {% endif %}
+    {% endfor %}
+    </article>

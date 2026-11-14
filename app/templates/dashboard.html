@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/competency-workflow.css">
     <link rel="stylesheet" href="/static/workflow.css">
+    <link rel="stylesheet" href="/static/review-workflow.css">
 </head>
 <body data-role="{{ ui_role or '' }}" class="dashboard-page">
 
@@ -206,69 +207,30 @@
 
 {% if active_role == role_methodist %}
 
-    <div class="card">
-        <h2>Панель методиста</h2>
-        <div class="review-start">
-            <div><p>Начните с РПД, которые преподаватели отправили на проверку. Откройте документ, проверьте выбор компетенций и результаты обучения, затем подтвердите проверку или верните замечания.</p></div>
-            <a class="button-link" href="/programmes/competency-matrix">Матрица компетенций программы →</a>
-        </div>
-        <p class="small">Матрица — общий обзор: какие компетенции выбраны в дисциплинах и какие ещё никому не назначены. Выбор меняет преподаватель в своём РПД.</p>
-    </div>
-
-    <div class="card">
-        <h2 id="review-inbox">РПД для проверки</h2>
-
-        {% if inbox_drafts %}
-            <table>
-                <tr>
-                    <th>Черновик</th>
-                    <th>Дисциплина</th>
-                    <th>Статус</th>
-                    <th>Замечания</th>
-                    <th>Действия</th>
-                </tr>
-
+    <main class="methodist-inbox">
+        <section class="card">
+            <div class="review-inbox-heading">
+                <div><h2>Панель методиста</h2><p class="small">Откройте РПД → проверьте документ и компетенции → примите решение.</p></div>
+                <a class="button-link" href="/programmes/competency-matrix">Матрица компетенций программы →</a>
+            </div>
+            <h3 id="review-inbox">РПД для проверки · {{ inbox_drafts | length }}</h3>
+            {% if inbox_drafts %}
+            <div class="review-inbox-list" role="region" aria-label="Очередь проверки" tabindex="0">
                 {% for draft in inbox_drafts %}
-                    <tr>
-                        <td>{{ draft.name }}</td>
-                        <td>{{ draft.course.title }}</td>
-
-                        <td>
-                            <span class="status">
-                                {{ status_labels.get(draft.status, draft.status) }}
-                            </span>
-                        </td>
-
-                        <td>
-                            {% if draft.feedback %}
-                                Замечания сохранены.
-                            {% else %}
-                                Замечаний пока нет.
-                            {% endif %}
-                        </td>
-
-                        <td>
-                            <a class="button-link" href="/drafts/{{ draft.id }}/view">Открыть</a>
-                            <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
-                            <a class="button-link" href="/drafts/{{ draft.id }}/feedback">Добавить или изменить замечания</a>
-
-                            {% if draft.feedback %}
-                                <form class="inline-form" action="/ui/drafts/{{ draft.id }}/mark-feedback-given" method="post">
-                                    <button type="submit">Вернуть с замечаниями</button>
-                                </form>
-                            {% endif %}
-
-                            <form class="inline-form" action="/ui/drafts/{{ draft.id }}/validate" method="post">
-                                <button type="submit">Подтвердить проверку РПД</button>
-                            </form>
-                        </td>
-                    </tr>
+                <article class="review-inbox-row">
+                    <div><h4>{{ draft.course.title }}</h4><p>{{ draft.name }}</p>
+                        <span class="status">{{ status_labels.get(draft.status, draft.status) }}</span>
+                        {% if draft.feedback %}<span class="small">Есть сохраненные замечания</span>{% endif %}
+                    </div>
+                    <a class="button-link" href="/drafts/{{ draft.id }}/view">Проверить РПД →</a>
+                </article>
                 {% endfor %}
-            </table>
-        {% else %}
-            <p>Пока нет РПД для проверки. Они появятся здесь, когда преподаватель нажмёт «Отправить на проверку» в своём черновике.</p>
-        {% endif %}
-    </div>
+            </div>
+            {% else %}
+            <p>Пока нет РПД для проверки. Они появятся здесь, когда преподаватель отправит черновик на проверку.</p>
+            {% endif %}
+        </section>
+    </main>
 
 {% endif %}
 

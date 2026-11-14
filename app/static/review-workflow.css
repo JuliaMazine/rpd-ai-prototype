@@ -1,0 +1,61 @@
+.review-page [hidden], .methodist-inbox [hidden] { display: none !important; }
+.review-workspace, .methodist-inbox { max-width: var(--page-width); margin: 0 auto; }
+.review-workspace { padding: 16px 0; }
+.review-workspace .card, .methodist-inbox .card { padding: 20px 24px !important; margin: 0; }
+.review-header h1 { margin: 14px 0 8px; font-size: 24px; overflow-wrap: anywhere; }
+.review-header p { margin: 0; }
+.review-inbox-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.review-inbox-heading .button-link { margin: 0; flex-shrink: 0; }
+.review-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; margin-top: 16px; align-items: start; }
+.review-reader { min-width: 0; }
+.review-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin-bottom: 16px; padding-bottom: 10px; }
+.review-tabs a { padding: 8px 10px; border-radius: var(--radius-sm); font-weight: 650; text-decoration: none; }
+.review-tabs a[aria-current] { background: var(--primary-subtle); box-shadow: inset 0 -3px var(--primary); }
+.review-scroll { max-height: calc(100dvh - 300px); min-height: 260px; overflow: auto; padding: 0 10px 12px 0; scrollbar-gutter: stable; }
+.review-scroll > .card { padding: 16px !important; box-shadow: none; }
+.review-workspace h2 { font-size: 19px; }
+.review-decision { position: sticky; top: 16px; }
+.review-decision textarea { height: clamp(120px, 22vh, 220px); min-height: 100px; }
+.review-decision button { width: 100%; margin: 8px 0 0; }
+.review-decision form { margin-bottom: 0; }
+.review-decision [data-validate-form] { border-top: 1px solid var(--border); padding-top: 10px; }
+.review-decision .small { margin: 8px 0; }
+.review-workspace .review-secondary { background: var(--card) !important; color: var(--primary-dark) !important; box-shadow: none; }
+.review-workspace button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.review-workspace :focus-visible, .review-inbox-list:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.rpd-document { font-family: "Times New Roman", serif; font-size: 17px; line-height: 1.5; overflow-wrap: anywhere; }
+.rpd-document h3 { margin-top: 28px; }
+.rpd-title { text-align: center; margin: 28px 0 24px; }
+.rpd-table-wrap { overflow-x: auto; margin: 20px 0; }
+.rpd-document .rpd-table { font-size: 14px; margin: 0; }
+.rpd-bullet { padding-left: 20px; }
+.review-scroll blockquote { white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px; }
+.methodist-inbox { margin-top: 20px; }
+.methodist-inbox h3 { margin: 20px 0 12px; }
+.review-inbox-list { max-height: 52vh; overflow: auto; scrollbar-gutter: stable; }
+.review-inbox-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid var(--border); padding: 16px 0; }
+.review-inbox-row > div { min-width: 0; overflow-wrap: anywhere; }
+.review-inbox-row h4 { margin: 0 0 6px; color: var(--text); }
+.review-inbox-row p { margin: 0 0 6px; }
+.review-inbox-row .button-link { margin: 0; flex-shrink: 0; }
+@media (max-width: 1200px) {
+    .review-workspace, .methodist-inbox { margin-left: 12px; margin-right: 12px; }
+}
+@media (max-width: 760px) {
+    .review-layout { grid-template-columns: minmax(0, 1fr); }
+    .review-scroll { max-height: 48dvh; }
+    .review-decision { position: static; }
+    .review-inbox-heading, .review-inbox-row { align-items: flex-start; flex-direction: column; }
+    .review-tabs { flex-wrap: wrap; }
+    .review-workspace .card, .methodist-inbox .card { padding: 16px !important; }
+}
+@media (max-height: 700px) and (min-width: 761px) {
+    .review-decision { position: static; }
+}
+body.review-page { padding-bottom: 0; }
+.review-workspace .small { font-size: 13px; line-height: 1.45; }
+.review-decision textarea { height: clamp(100px, 18vh, 180px); }
+.review-decision h2 { margin-bottom: 12px; }
+@media (min-width: 761px) and (min-height: 701px) {
+    .review-decision { max-height: calc(100dvh - 210px); overflow: auto; }
+}

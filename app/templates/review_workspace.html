@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Проверка РПД — {{ draft.name }}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/competency-workflow.css">
+    <link rel="stylesheet" href="/static/review-workflow.css">
+</head>
+<body data-role="{{ ui_role or '' }}" class="review-page">
+<main class="review-workspace" data-review-workflow>
+    <header class="card review-header">
+        <div class="review-inbox-heading">
+            <a href="/dashboard#review-inbox">← К очереди проверки</a>
+            <a href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
+        </div>
+        <h1>{{ draft.course.title }}</h1>
+        <p>{{ draft.name }} · <span class="status">{{ status_labels.get(draft.status, draft.status) }}</span></p>
+    </header>
+    <div class="review-layout">
+        <section class="card review-reader" aria-label="Материалы проверки">
+            <nav class="review-tabs" aria-label="Разделы проверки">
+                <a href="#document" data-review-tab="document">Текст РПД</a>
+                <a href="#selection" data-review-tab="selection">Компетенции</a>
+                <a href="#sources" data-review-tab="sources">Источники</a>
+            </nav>
+            <section id="document" data-review-panel="document" class="review-scroll" tabindex="0" aria-labelledby="document-heading">
+                <h2 id="document-heading" tabindex="-1">Текст РПД</h2>
+                {% if generation_review.get('status') == 'template' %}<p class="hint">Это шаблонный черновик. Проверьте, наполнен ли он содержанием.</p>{% endif %}
+                {% include "rpd_document.html" %}
+            </section>
+            <section id="selection" data-review-panel="selection" class="review-scroll" tabindex="0" aria-labelledby="selection-heading">
+                <h2 id="selection-heading" tabindex="-1">Компетенции этого РПД</h2>
+                <p class="small">Сверьте программу и выбор. Проверьте в тексте, что результаты обучения и задания обосновывают эти компетенции.</p>
+                {% include "competency_selection.html" %}
+                <a href="/programmes/competency-matrix{% if selection.snapshot and selection.snapshot.program_id %}?program_id={{ selection.snapshot.program_id | urlencode }}{% endif %}">Матрица компетенций программы →</a>
+            </section>
+            <section id="sources" data-review-panel="sources" class="review-scroll" tabindex="0" aria-labelledby="sources-heading">
+                <h2 id="sources-heading" tabindex="-1">Источники черновика</h2>
+                {% if generation_review.get('evidence') %}
+                    {% if generation_review.edited %}<p class="hint">Текст изменен после генерации. Источники относятся к исходной версии.</p>{% endif %}
+                    {% for topic, items in generation_review.evidence | groupby('topic') %}
+                    <h3>{{ topic }}</h3>
+                    {% for item in items %}
+                    <details><summary>{{ item.filename }} — {{ item.location }}</summary><blockquote>{{ item.quote }}</blockquote></details>
+                    {% endfor %}
+                    {% endfor %}
+                {% else %}<p>Для этого РПД источники не сохранены. Проверьте содержание и выбор компетенций вручную.</p>{% endif %}
+            </section>
+        </section>
+        <aside class="card review-decision" id="decision" aria-labelledby="decision-heading">
+            <h2 id="decision-heading" tabindex="-1">Решение по РПД</h2>
+            <p class="small">Проверьте текст и компетенции. Подтвердите проверку или верните РПД на доработку.</p>
+            {% if request.query_params.get('saved') == '1' %}<p class="hint" role="status">Замечания сохранены. РПД остается на проверке.</p>{% endif %}
+            <form action="/ui/drafts/{{ draft.id }}/feedback" method="post" data-feedback-form>
+                <label for="review-feedback">Замечания преподавателю</label>
+                <textarea id="review-feedback" name="feedback" aria-describedby="feedback-help" placeholder="Что и в каком разделе нужно исправить?">{{ draft.feedback or '' }}</textarea>
+                <p id="feedback-help" class="small">При возврате замечания сохранятся и будут отправлены преподавателю.</p>
+                <button type="submit" name="decision" value="return">Вернуть с замечаниями</button>
+                <button type="submit" name="decision" value="save" class="review-secondary">Сохранить замечания</button>
+            </form>
+            <p class="small" data-feedback-dirty hidden>Есть несохраненные замечания. Сохраните их или верните РПД преподавателю.</p>
+            <form action="/ui/drafts/{{ draft.id }}/validate" method="post" data-validate-form>
+                <button type="submit">Подтвердить проверку РПД</button>
+                <p class="small">Завершит проверку в приложении.</p>
+            </form>
+        </aside>
+    </div>
+</main>
+<script src="/static/review-workflow.js" defer></script>
+</body>
+</html>

@@ -10,6 +10,8 @@ from app.auth import (
     require_draft_reader,
 )
 from app.constants import (
+    REVIEWABLE_STATUSES,
+    ROLE_METHODIST,
     STATUS_DRAFT_EDITING,
     STATUS_FEEDBACK_GIVEN,
     STATUS_RESUBMITTED_FOR_REVIEW,
@@ -49,7 +51,7 @@ def view_draft_page(
 
     return templates.TemplateResponse(
         request=request,
-        name="draft_view.html",
+        name="review_workspace.html" if active_role == ROLE_METHODIST and draft.status in REVIEWABLE_STATUSES else "draft_view.html",
         context={
             "draft": draft,
             "active_role": active_role,

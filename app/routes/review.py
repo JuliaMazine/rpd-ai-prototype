@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
@@ -11,6 +13,8 @@ from app.constants import (
 )
 from app.database import get_db
 from app.models import Draft
+from app.services.document_view_service import document_blocks
+from app.services.competency_selection_service import selection_context
 
 
 from app.web import templates
@@ -38,11 +42,19 @@ def feedback_page(
             detail=f"Feedback cannot be given in status {draft.status}",
         )
 
+    try:
+        review = json.loads(draft.generation_metadata or "{}")
+    except (ValueError, TypeError):
+        review = {}
+
     return templates.TemplateResponse(
         request=request,
-        name="feedback.html",
+        name="review_workspace.html",
         context={
             "draft": draft,
+            "selection": selection_context(draft),
+            "generation_review": review,
+            "document_blocks": document_blocks(draft.content),
         },
     )
 
@@ -51,7 +63,8 @@ def feedback_page(
 def ui_save_feedback(
     request: Request,
     draft_id: int,
-    feedback: str = Form(...),
+    feedback: str = Form(default=""),
+    decision: str = Form(default="save"),
     db: Session = Depends(get_db),
 ):
     require_role(request, db, ROLE_METHODIST)
@@ -67,12 +80,22 @@ def ui_save_feedback(
             detail=f"Feedback cannot be written in status {draft.status}",
         )
 
+    if decision not in {"save", "return"}:
+        raise HTTPException(422, "Unknown review decision")
+    if decision == "return" and not feedback.strip():
+        raise HTTPException(422, "Напишите замечания перед возвратом преподавателю.")
+
     draft.feedback = feedback
+    if decision == "return":
+        draft.status = STATUS_FEEDBACK_GIVEN
 
     db.commit()
 
+    if decision == "return":
+        return RedirectResponse(url="/dashboard#review-inbox", status_code=303)
+
     return RedirectResponse(
-        url=f"/drafts/{draft.id}/feedback",
+        url=f"/drafts/{draft.id}/view?saved=1#decision",
         status_code=303,
     )
 
