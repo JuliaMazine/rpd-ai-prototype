@@ -6,29 +6,13 @@
     <title>Матрица компетенций — РПД</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/competency-workflow.css">
+    <link rel="stylesheet" href="/static/matrix-workflow.css">
 </head>
-<body class="workflow-page">
-{% include "account_header.html" %}
-
-<div class="card">
-    <h2>Матрица компетенций программы</h2>
-    <div class="review-start">
-        <p>Здесь видно, какие компетенции выбраны в дисциплинах программы и какие ещё никому не назначены.</p>
-        <a class="button-link" href="/dashboard#review-inbox">К проверке РПД</a>
-    </div>
-    <details>
-        <summary>Как здесь появляются отметки</summary>
-        <ol class="review-checklist">
-            <li>Преподаватель указывает программу дисциплины, выбирает компетенции и отправляет РПД на проверку.</li>
-            <li>Методист открывает РПД и проверяет выбор. Подтверждает проверку или возвращает замечания.</li>
-            <li>Матрица показывает выбор из отправленного РПД. Статус над столбцом показывает, завершена ли проверка.</li>
-        </ol>
-        <p>Выбор меняет преподаватель в РПД. Чтобы запросить исправления, откройте РПД для проверки.</p>
-    </details>
-</div>
-
-    <section class="card" aria-label="Выбор программы">
-        <h2>Выбор программы</h2>
+<body data-role="{{ ui_role or '' }}" class="workflow-page matrix-page">
+<main class="matrix-workspace">
+    <section class="card matrix-toolbar" aria-labelledby="matrix-page-title">
+        <div class="matrix-navigation"><a href="/dashboard#review-inbox">← К проверке РПД</a><span>{{ user.name }} · Методист</span></div>
+        <h1 id="matrix-page-title">Матрица компетенций программы</h1>
         <form method="get" class="matrix-filters">
             <div class="matrix-program-field">
                 <label for="matrix-program">Образовательная программа</label>
@@ -38,19 +22,24 @@
                     {% endfor %}
                 </select>
             </div>
+            {% if unassigned_only %}<input type="hidden" name="unassigned_only" value="true">{% endif %}
             <button type="submit">Показать программу</button>
-            <label class="matrix-checkbox"><input type="checkbox" name="unassigned_only" value="true" {% if unassigned_only %}checked{% endif %}> Только неназначенные компетенции</label>
         </form>
-        <p class="matrix-summary">Дисциплин: <strong>{{ stats.courses }}</strong> ·
-            С РПД для учета в матрице: <strong>{{ stats.submitted }}</strong> ·
-            Компетенций выбрано: <strong>{{ stats.assigned }} из {{ stats.competencies }}</strong> ·
-            Без назначений: <strong>{{ stats.unassigned }}</strong>
-        </p>
+        <nav class="matrix-view-filters" aria-label="Фильтр компетенций">
+            <a href="?program_id={{ program_id | urlencode }}" {% if not unassigned_only %}aria-current="page"{% endif %}>Все компетенции <strong>{{ stats.competencies }}</strong></a>
+            <a href="?program_id={{ program_id | urlencode }}&amp;unassigned_only=true" {% if unassigned_only %}aria-current="page"{% endif %}>Без назначений <strong>{{ stats.unassigned }}</strong></a>
+        </nav>
+        <div class="matrix-overview">
+            <p>Дисциплин: <strong>{{ stats.courses }}</strong> · С отправленным РПД: <strong>{{ stats.submitted }}</strong> · Компетенций выбрано: <strong>{{ stats.assigned }} из {{ stats.competencies }}</strong></p>
+            <details class="matrix-help"><summary>Как читать матрицу</summary>
+                <p>✓ — компетенция выбрана преподавателем в РПД. Откройте РПД над столбцом, чтобы проверить выбор и результаты обучения, подтвердить проверку или вернуть замечания. Выбор меняет преподаватель.</p>
+                <p>Учитывается последнее отправленное или проверенное РПД дисциплины. Черновики в работе и возвращенные с замечаниями не учитываются; при возврате используется предыдущее подходящее РПД, если оно есть. Отметка показывает выбор компетенции, а не её достижение студентами.</p>
+            </details>
+        </div>
+        {% if courses_without_program %}
+        <details class="matrix-program-warning"><summary>Дисциплины без программы каталога: {{ courses_without_program }}</summary><p>Они пока не входят в матрицу. Преподавателю нужно выбрать «Программу из каталога компетенций» в сведениях о дисциплине.</p></details>
+        {% endif %}
     </section>
-
-    {% if courses_without_program %}
-    <aside class="card"><div class="hint"><strong>Есть дисциплины без программы каталога: {{ courses_without_program }}.</strong> Они пока не входят в матрицу. Преподавателю нужно выбрать «Программу из каталога компетенций» в сведениях о дисциплине.</div></aside>
-    {% endif %}
 
     {% if not columns %}
     <section class="card matrix-empty" aria-labelledby="matrix-empty-title">
@@ -64,15 +53,15 @@
     <section class="card matrix-panel" aria-labelledby="matrix-title">
         {% if not columns %}<details class="matrix-catalogue"><summary>Посмотреть каталог программы · {{ stats.competencies }} компетенций</summary>{% endif %}
         <div class="matrix-table-heading">
-            <div><h2 id="matrix-title">{% if columns %}Компетенции × дисциплины{% else %}Каталог программы{% endif %}</h2><p>{% if columns %}Нажмите на ссылку РПД над столбцом, чтобы увидеть сохраненный выбор.{% else %}Все компетенции этой программы. Назначений пока нет.{% endif %}</p></div>
-            {% if columns %}<span class="matrix-legend"><span class="matrix-check" aria-hidden="true">✓</span> Выбрана в РПД</span>{% endif %}
+            <div><h2 id="matrix-title">{% if columns %}Компетенции × дисциплины{% else %}Каталог программы{% endif %}</h2><p>{% if columns %}Откройте РПД над столбцом для проверки. ✓ — выбрана в РПД.{% else %}Все компетенции этой программы. Назначений пока нет.{% endif %}</p></div>
+            {% if rows %}<div class="matrix-search" data-matrix-search hidden><label for="matrix-search">Найти компетенцию</label><input id="matrix-search" type="search" placeholder="Код или формулировка" aria-controls="matrix-table"><span class="matrix-search-count" data-matrix-count role="status" aria-live="polite"></span></div>{% endif %}
         </div>
         {% if rows %}
         <div class="matrix-scroll" role="region" aria-label="Матрица компетенций" tabindex="0">
-            <table class="competency-grid">
+            <table class="competency-grid" id="matrix-table">
                 <caption class="visually-hidden">Выбор компетенций по дисциплинам программы {{ program_id }}</caption>
                 <thead><tr>
-                    <th scope="col" class="matrix-first-column">Компетенция <span class="matrix-heading-note">Нажмите на формулировку, чтобы раскрыть её</span></th>
+                    <th scope="col" class="matrix-first-column">Компетенция <span class="matrix-heading-note">Раскройте формулировку для подробностей</span></th>
                     {% for column in columns %}
                     <th scope="col" class="matrix-course-column">
                         <span class="matrix-course-title">{{ column.course.title }}</span>
@@ -97,11 +86,13 @@
                 </tr>{% endfor %}</tbody>
             </table>
         </div>
+        <p class="matrix-search-empty" data-matrix-empty hidden>По этому запросу компетенций не найдено. Измените запрос или очистите поле поиска.</p>
         {% else %}
         <div class="matrix-filter-empty"><h3>Все компетенции уже выбраны</h3><p>В этой программе нет компетенций без назначений.</p><a href="/programmes/competency-matrix?program_id={{ program_id | urlencode }}">Показать всю матрицу →</a></div>
         {% endif %}
         {% if not columns %}</details>{% endif %}
     </section>
-    <div class="card"><details><summary>Какие РПД учитываются в матрице</summary><p class="matrix-footnote">Матрица учитывает последнее отправленное или проверенное РПД каждой дисциплины. Черновики в работе и возвращенные с замечаниями не учитываются; при возврате используется предыдущее подходящее РПД, если оно есть. Отметка показывает выбор компетенции, а не её достижение студентами.</p></details></div>
+</main>
+<script src="/static/matrix-workflow.js" defer></script>
 </body>
 </html>

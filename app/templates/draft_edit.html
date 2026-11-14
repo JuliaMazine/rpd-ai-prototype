@@ -2,155 +2,79 @@
 <html lang="ru">
 <head>
     <title>Редактирование черновика — РПД</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            background: #f7f7f7;
-        }
-
-        .card {
-            background: white;
-            border: 1px solid #ccc;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .actions {
-            margin-bottom: 20px;
-        }
-
-        .button-link {
-            display: inline-block;
-            padding: 8px 12px;
-            background: #eeeeee;
-            border: 1px solid #999;
-            text-decoration: none;
-            color: black;
-            margin-right: 8px;
-        }
-
-        .button-link:hover {
-            background: #dddddd;
-        }
-
-        button {
-            padding: 8px 12px;
-            cursor: pointer;
-            margin-right: 8px;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 650px;
-            box-sizing: border-box;
-            font-family: "Times New Roman", serif;
-            font-size: 16px;
-            line-height: 1.45;
-            padding: 15px;
-        }
-
-        .status {
-            display: inline-block;
-            padding: 4px 8px;
-            border: 1px solid #999;
-            background: #f0f0f0;
-            font-weight: bold;
-        }
-
-        .feedback {
-            background: #fff9db;
-            border: 1px solid #d6c36a;
-            padding: 15px;
-            white-space: pre-wrap;
-        }
-
-        .hint {
-            color: #555;
-            font-size: 14px;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/workflow.css">
 </head>
-<body>
-
-
-
-
-<div class="actions">
-    <a class="button-link" href="/dashboard">К панели управления</a>
-    <a class="button-link" href="/drafts/{{ draft.id }}/view">Открыть черновик</a>
-    <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
-</div>
-
-<div class="card">
-    <h1>Редактировать черновик</h1>
-
-    <p>
-        <strong>Название:</strong> {{ draft.name }}
-    </p>
-
-    <p>
-        <strong>Дисциплина:</strong> {{ draft.course.title }}
-    </p>
-
-    <p>
-        <strong>Статус:</strong>
-        <span class="status">{{ status_labels.get(draft.status, draft.status) }}</span>
-    </p>
-</div>
-
-{% if draft.feedback %}
+<body data-role="{{ ui_role or '' }}" class="draft-editor-page">
+<main class="workflow-shell" data-editor-workflow>
     <div class="card">
-        <h2>Замечания методиста</h2>
-        <div class="feedback">{{ draft.feedback }}</div>
+        <a href="/dashboard#course-{{ draft.course.id }}/drafts">← К черновикам дисциплины</a>
+        <h1>Редактировать черновик</h1>
+        <p>{{ draft.name }} · <span class="status">{{ status_labels.get(draft.status, draft.status) }}</span></p>
+        <nav class="workflow-steps" aria-label="Редактирование РПД">
+            <a href="#text" data-editor-step="text">1. Текст</a>
+            <a href="#selection" data-editor-step="selection">2. Компетенции</a>
+            <a href="#review" data-editor-step="review">3. Отправка на проверку{% if draft.feedback %} · Есть замечания{% endif %}</a>
+        </nav>
+        <section data-editor-panel="text">
+            <h2 tabindex="-1">Текст черновика</h2>
+            <form action="/ui/drafts/{{ draft.id }}/edit" method="post" data-draft-text-form>
+                <label class="visually-hidden" for="draft-content">Текст черновика РПД</label>
+                <textarea id="draft-content" name="content">{{ draft.content }}</textarea>
+                <div class="step-actions">
+                    <button type="submit">Сохранить изменения</button>
+                    <a href="#selection">Далее: компетенции →</a>
+                </div>
+            </form>
+        </section>
+        <section data-editor-panel="selection">
+            <h2 tabindex="-1">Компетенции</h2>
+            {% include "competency_selection.html" %}
+            {% if editor %}
+            <h3>Изменить выбор компетенций</h3>
+            <p>Программа: {{ editor.program_id }}. Сохранение обновляет таблицу компетенций в РПД и DOCX. Остальной текст сохраняется. Для новых компетенций соответствия результатам обучения нужно проверить вручную.</p>
+            <form action="/ui/drafts/{{ draft.id }}/competency-selection" method="post" data-draft-selection-form>
+                <input type="hidden" name="program_id" value="{{ editor.program_id }}">
+                <input type="hidden" name="catalogue_fingerprint" value="{{ editor.catalogue_fingerprint }}">
+                <details><summary>Весь каталог программы ({{ editor.entries | length }})</summary>
+                    <div class="editor-catalogue">
+                    {% for entry in editor.entries %}
+                    <label><input type="checkbox" name="competency_codes" value="{{ entry.codes[0] }}" {% if entry.codes[0] in editor.selected_codes %}checked{% endif %}> {{ entry.codes[0] }} — {{ entry.description }}</label>
+                    {% endfor %}
+                    </div>
+                </details>
+                {% if selection.warnings and selection.expected_block %}
+                <label><input type="checkbox" name="replace_table" value="true"> Заменить измененную вручную таблицу компетенций по сохраненному выбору и новым отметкам. Правки внутри этой таблицы будут удалены.</label>
+                {% endif %}
+                <button type="submit">Сохранить выбор компетенций</button>
+            </form>
+            {% elif editor_error %}<p class="hint">{{ editor_error }}</p>{% endif %}
+            <div class="step-actions"><a href="#text">← Текст</a><a class="button-link" href="#review">Далее: проверка →</a></div>
+        </section>
+        <section data-editor-panel="review">
+            <h2 tabindex="-1">Отправка на проверку</h2>
+            {% if draft.feedback %}
+                <h3>Замечания методиста</h3>
+                <div class="hint" style="white-space: pre-wrap">{{ draft.feedback }}</div>
+            {% endif %}
+            <p>Проверьте текст и выбор компетенций. Сохраните изменения перед отправкой методисту.</p>
+            <p class="hint" data-unsaved-warning hidden role="status">Есть несохраненные изменения. Сохраните текст и выбор компетенций перед отправкой.</p>
+            <a class="button-link secondary" href="/drafts/{{ draft.id }}/view">Открыть черновик</a>
+            <a class="button-link secondary" href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
+            {% if draft.status == "DRAFT_EDITING" %}
+            <form action="/ui/drafts/{{ draft.id }}/submit-review" method="post" data-review-form>
+                <button type="submit">Отправить на проверку</button>
+            </form>
+            {% elif draft.status == "DRAFT_FEEDBACK_GIVEN" %}
+            <form action="/ui/drafts/{{ draft.id }}/resubmit-review" method="post" data-review-form>
+                <button type="submit">Отправить повторно</button>
+            </form>
+            {% endif %}
+            <div class="step-actions"><a href="#selection">← Компетенции</a></div>
+        </section>
     </div>
-{% endif %}
-
-{% include "competency_selection.html" %}
-{% if editor %}
-<div class="card">
-<h2>Изменить выбор компетенций</h2>
-<p>Программа: {{ editor.program_id }}. Сохранение обновляет таблицу компетенций в РПД и DOCX. Остальной текст сохраняется. Для новых компетенций соответствия результатам обучения нужно проверить вручную.</p>
-<form action="/ui/drafts/{{ draft.id }}/competency-selection" method="post">
-<input type="hidden" name="program_id" value="{{ editor.program_id }}">
-<input type="hidden" name="catalogue_fingerprint" value="{{ editor.catalogue_fingerprint }}">
-<details><summary>Весь каталог программы ({{ editor.entries | length }})</summary>
-{% for entry in editor.entries %}<label style="display:block;margin:12px 0"><input type="checkbox" name="competency_codes" value="{{ entry.codes[0] }}" {% if entry.codes[0] in editor.selected_codes %}checked{% endif %}> {{ entry.codes[0] }} — {{ entry.description }}</label>{% endfor %}
-</details>
-{% if selection.warnings and selection.expected_block %}
-<label><input type="checkbox" name="replace_table" value="true"> Заменить измененную вручную таблицу компетенций по сохраненному выбору и новым отметкам. Правки внутри этой таблицы будут удалены.</label>
-{% endif %}
-<button type="submit">Сохранить выбор компетенций</button>
-</form>
-</div>
-{% elif editor_error %}<p class="hint">{{ editor_error }}</p>{% endif %}
-
-<div class="card">
-    <h2>Текст черновика</h2>
-
-    <p class="hint">Отредактируйте черновик РПД. После сохранения его можно отправить методисту на проверку.</p>
-
-    <form action="/ui/drafts/{{ draft.id }}/edit" method="post">
-        <textarea name="content">{{ draft.content }}</textarea>
-
-        <p>
-            <button type="submit">Сохранить изменения</button>
-        </p>
-    </form>
-
-    {% if draft.status == "DRAFT_EDITING" %}
-        <form action="/ui/drafts/{{ draft.id }}/submit-review" method="post">
-            <button type="submit">Отправить на проверку</button>
-        </form>
-    {% endif %}
-
-    {% if draft.status == "DRAFT_FEEDBACK_GIVEN" %}
-        <form action="/ui/drafts/{{ draft.id }}/resubmit-review" method="post">
-            <button type="submit">Отправить повторно</button>
-        </form>
-    {% endif %}
-</div>
-
+</main>
+<script src="/static/workflow.js" defer></script>
 </body>
 </html>

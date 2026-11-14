@@ -72,13 +72,13 @@
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="/static/competency-workflow.css">
 </head>
-<body>
+<body data-role="{{ ui_role or '' }}">
 
 
 
 
 <div class="actions">
-    <a class="button-link" href="/dashboard">К панели управления</a>
+    <a class="button-link" href="/dashboard{% if active_role == "USER_TEACHER" %}#course-{{ draft.course.id }}/drafts{% endif %}">К панели управления</a>
     <a class="button-link" href="/drafts/{{ draft.id }}/download-docx">Скачать DOCX</a>
 
     {% if active_role == "USER_TEACHER" and draft.status in ["DRAFT_EDITING", "DRAFT_FEEDBACK_GIVEN"] %}
@@ -131,21 +131,7 @@
 {% endif %}
 <div class="card">
     <h2>Содержание черновика</h2>
-    <article class="rpd-document">
-    {% for block in document_blocks %}
-        {% if block.kind == 'table' %}
-        <div class="rpd-table-wrap"><table class="rpd-table">
-            <thead><tr>{% for cell in block.headers %}<th>{{ cell }}</th>{% endfor %}</tr></thead>
-            <tbody>{% for row in block.rows %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endfor %}</tbody>
-        </table></div>
-        {% elif block.kind == 'title' %}<h2 class="rpd-title">{{ block.text }}</h2>
-        {% elif block.kind == 'heading' %}<h3>{{ block.text }}</h3>
-        {% elif block.kind == 'subheading' %}<h4>{{ block.text }}</h4>
-        {% elif block.kind == 'bullet' %}<p class="rpd-bullet">• {{ block.text }}</p>
-        {% else %}<p>{{ block.text }}</p>
-        {% endif %}
-    {% endfor %}
-    </article>
+    {% include "rpd_document.html" %}
 </div>
 
 {% if generation_review.get('evidence') %}

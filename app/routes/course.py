@@ -36,7 +36,7 @@ def ui_create_course(
     db.add(CourseTeacher(course_id=course.id, user_id=user.id))
     db.commit()
 
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url=f"/dashboard#course-{course.id}/materials", status_code=303)
 
 
 @router.post("/ui/courses/{course_id}/edit")
@@ -53,7 +53,7 @@ def ui_edit_course(
     for name, value in data.model_dump().items():
         setattr(course, name, value)
     db.commit()
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url=f"/dashboard#course-{course.id}/details", status_code=303)
 
 
 @router.post("/ui/courses/{course_id}/materials")
@@ -76,7 +76,7 @@ async def ui_upload_material(
     finally:
         await file.close()
 
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url=f"/dashboard#course-{course.id}/materials", status_code=303)
 
 
 async def generation_program(request: Request):
@@ -180,4 +180,4 @@ def ui_generate_draft(
     db.add(draft)
     db.commit()
 
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url=f"/drafts/{draft.id}/edit", status_code=303)

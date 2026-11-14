@@ -1,0 +1,46 @@
+[
+  {
+    "seconds": 0.0,
+    "event": "Methodist inbox: one review action per RPD"
+  },
+  {
+    "seconds": 8.8,
+    "event": "Review workspace: document and decision panel together"
+  },
+  {
+    "seconds": 15.7,
+    "event": "Saved competencies for this RPD"
+  },
+  {
+    "seconds": 21.5,
+    "event": "Source evidence, expanded on demand"
+  },
+  {
+    "seconds": 28.0,
+    "event": "Write feedback beside the document"
+  },
+  {
+    "seconds": 35.9,
+    "event": "Comments stay in place while switching sections"
+  },
+  {
+    "seconds": 39.7,
+    "event": "Save notes without returning the RPD"
+  },
+  {
+    "seconds": 44.5,
+    "event": "Return with comments in one action"
+  },
+  {
+    "seconds": 49.3,
+    "event": "Review another RPD and confirm the review"
+  },
+  {
+    "seconds": 61.6,
+    "event": "Brief matrix overview: compact controls and competency search"
+  },
+  {
+    "seconds": 79.3,
+    "event": "Finished: review queue cleared"
+  }
+]

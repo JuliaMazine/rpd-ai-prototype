@@ -360,3 +360,54 @@ input[type="checkbox"] {
 .generation-form [hidden] { display: none !important; }
 
 .source-excerpt { margin: 8px 0 8px 16px; }
+
+/* Role colour follows the active session across review, feedback and matrix pages. */
+body[data-role="USER_METHODIST"] {
+    --bg: #f4f0fa;
+    --bg-soft: #eee6f7;
+    --card-soft: #faf7fd;
+    --text: #2c203c;
+    --muted: #6b5d7c;
+    --muted-strong: #51405f;
+    --border: #d8cbe6;
+    --border-strong: #b6a0cc;
+    --primary: #79529e;
+    --primary-dark: #5c3a7e;
+    --primary-light: #9066b5;
+    --primary-subtle: #eee2f8;
+    --shadow-sm: 0 2px 8px rgba(63, 36, 87, 0.05);
+    --shadow: 0 14px 36px rgba(63, 36, 87, 0.08);
+    background: radial-gradient(circle at top left, #eaddf54d, transparent 30%),
+        linear-gradient(180deg, #fcf9ff 0%, var(--bg) 45%, #f1ebf8 100%);
+}
+body[data-role="USER_METHODIST"]::before {
+    background: linear-gradient(90deg, #52316f, #79529e, #ad88ce, #e3cff5);
+}
+body[data-role="USER_METHODIST"] .top-bar {
+    background: linear-gradient(135deg, #eee2f8, #ffffff) !important;
+}
+body[data-role="USER_METHODIST"] th {
+    background: linear-gradient(180deg, #f1e8fa, #eee2f8) !important;
+    color: var(--primary-dark);
+}
+body[data-role="USER_METHODIST"] tr:hover td { background: var(--card-soft); }
+body[data-role="USER_METHODIST"] button,
+body[data-role="USER_METHODIST"] .button-link {
+    box-shadow: 0 4px 12px rgba(63, 36, 87, 0.2);
+}
+body[data-role="USER_METHODIST"] button:hover,
+body[data-role="USER_METHODIST"] .button-link:hover {
+    box-shadow: 0 6px 18px rgba(63, 36, 87, 0.24);
+}
+body[data-role="USER_METHODIST"] input:focus,
+body[data-role="USER_METHODIST"] textarea:focus,
+body[data-role="USER_METHODIST"] select:focus {
+    box-shadow: 0 0 0 4px rgba(121, 82, 158, 0.16);
+}
+.role-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--primary-subtle);
+    color: var(--primary-dark);
+}

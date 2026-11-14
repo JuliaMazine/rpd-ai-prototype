@@ -10,6 +10,8 @@ from app.auth import (
     require_draft_reader,
 )
 from app.constants import (
+    REVIEWABLE_STATUSES,
+    ROLE_METHODIST,
     STATUS_DRAFT_EDITING,
     STATUS_FEEDBACK_GIVEN,
     STATUS_RESUBMITTED_FOR_REVIEW,
@@ -49,7 +51,7 @@ def view_draft_page(
 
     return templates.TemplateResponse(
         request=request,
-        name="draft_view.html",
+        name="review_workspace.html" if active_role == ROLE_METHODIST and draft.status in REVIEWABLE_STATUSES else "draft_view.html",
         context={
             "draft": draft,
             "active_role": active_role,
@@ -177,7 +179,7 @@ def ui_submit_review(
 
     db.commit()
 
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url=f"/dashboard#course-{draft.course_id}/drafts", status_code=303)
 
 
 @router.post("/ui/drafts/{draft_id}/resubmit-review")
@@ -204,7 +206,7 @@ def ui_resubmit_review(
 
     db.commit()
 
-    return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url=f"/dashboard#course-{draft.course_id}/drafts", status_code=303)
 
 
 @router.post("/ui/drafts/{draft_id}/competency-selection")
@@ -218,4 +220,4 @@ async def ui_update_selection(request: Request, draft_id: int, db: Session = Dep
     except (ValueError, TypeError, KeyError, CatalogueError) as error:
         raise HTTPException(422, str(error)) from None
     db.commit()
-    return RedirectResponse(url=f"/drafts/{draft.id}/edit", status_code=303)
+    return RedirectResponse(url=f"/drafts/{draft.id}/edit#selection", status_code=303)

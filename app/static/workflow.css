@@ -1,0 +1,60 @@
+/* Scoped workflow layout; existing document and reviewer screens retain their styles. */
+.dashboard-page [hidden] { display: none !important; }
+.workflow-shell { max-width: var(--page-width); margin: 0 auto; scroll-margin-top: 16px; }
+.workflow-shell > .card, .workflow-shell > .course-card { margin-bottom: 20px; }
+.dashboard-page .top-bar { padding: 18px 28px !important; margin-top: 20px; }
+.dashboard-page .top-bar h1 { font-size: 24px; margin-bottom: 8px; }
+.dashboard-page .top-bar p { display: inline-flex; flex-wrap: wrap; gap: 6px; margin: 0 18px 0 0; font-size: 13px; }
+.dashboard-page .top-bar p:last-child { margin-top: 8px; }
+.dashboard-page .top-bar .button-link { padding: 6px 12px !important; min-height: 34px; margin-top: 0; }
+.workflow-intro { margin-bottom: 0 !important; padding: 18px 28px !important; box-shadow: none; }
+.workflow-intro h2 { font-size: 18px; margin-bottom: 4px; }
+.workflow-intro p { margin: 0; color: var(--muted); }
+.workflow-heading { display: flex; gap: 16px; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.workflow-heading h2 { margin-bottom: 6px; }
+.workflow-heading p { margin-bottom: 0; }
+.workflow-heading .button-link { flex-shrink: 0; margin: 0; }
+.course-picker { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.course-tile { display: flex; flex-direction: column; gap: 8px; padding: 20px; border: 1px solid var(--border); border-radius: var(--radius); text-decoration: none; color: var(--text); overflow-wrap: anywhere; }
+.course-tile:hover { background: var(--card-soft); border-color: var(--primary); }
+.course-tile strong { font-size: 18px; }
+.course-tile > span { color: var(--muted); }
+.course-tile .course-tile-action { color: var(--primary); font-weight: 650; margin-top: auto; }
+.workflow-shell .course-card > h2, .workflow-shell [data-screen="new"] > h2 { margin-top: 16px; }
+.workflow-steps { display: flex; gap: 8px; margin: 24px 0; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+.workflow-steps a { flex: 1; padding: 10px 12px; border-radius: var(--radius-sm); text-decoration: none; color: var(--muted-strong); font-weight: 600; }
+.workflow-steps a:hover { background: var(--bg-soft); }
+.workflow-steps a[aria-current="step"] { background: var(--primary-subtle); color: var(--primary-dark); box-shadow: inset 0 -3px var(--primary); }
+.workflow-steps span { font-size: 12px; margin-left: 4px; }
+.step-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.workflow-shell .secondary { background: white !important; color: var(--primary-dark) !important; box-shadow: none; }
+.workflow-shell fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.workflow-shell legend { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.workflow-shell .form-progress { margin-bottom: 8px; }
+.workflow-shell .generation-form .catalogue-options { max-height: 360px; overflow: auto; }
+.workflow-shell button:disabled { opacity: .55; cursor: wait; transform: none; }
+.workflow-shell :focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.workflow-shell .inline-form { display: inline; }
+@media (max-width: 900px) {
+    .workflow-shell { max-width: calc(100% - 24px); }
+}
+@media (max-width: 600px) {
+    .course-picker { grid-template-columns: 1fr; }
+    .workflow-heading { align-items: flex-start; flex-direction: column; }
+    .workflow-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+    .workflow-steps a { font-size: 13px; padding: 8px; }
+    .step-actions { flex-wrap: wrap; }
+}
+.workflow-shell .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 20px; }
+.workflow-shell .field-grid input, .workflow-shell .field-grid select { margin-bottom: 0; }
+@media (max-width: 600px) {
+    .workflow-shell .field-grid { grid-template-columns: 1fr; }
+}
+.draft-editor-page [hidden] { display: none !important; }
+.draft-editor-page .workflow-shell > .card { margin-top: 24px; }
+.draft-editor-page h1 { font-size: 25px; margin: 14px 0 8px; }
+.draft-editor-page textarea[name="content"] { min-height: 300px; height: 48vh; padding: 16px !important; }
+.draft-editor-page [data-editor-panel="selection"] > .card { padding: 18px !important; margin: 0 0 20px; box-shadow: none; }
+.draft-editor-page .editor-catalogue { max-height: 45vh; overflow: auto; padding: 8px; }
+.draft-editor-page .editor-catalogue label { margin: 12px 0; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

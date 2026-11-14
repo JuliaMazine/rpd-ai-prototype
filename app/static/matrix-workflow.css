@@ -1,0 +1,73 @@
+/* Keep programme controls and the matrix in one viewport on desktop. */
+body.matrix-page { padding-bottom: 0; }
+.matrix-page [hidden] { display: none !important; }
+.matrix-workspace { max-width: var(--page-width); margin: 0 auto; padding: 16px 0; display: flex; flex-direction: column; gap: 16px; }
+.matrix-workspace > .card { margin: 0; padding: 18px 24px !important; }
+.matrix-toolbar { flex-shrink: 0; }
+.matrix-navigation { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; color: var(--muted); }
+.matrix-toolbar h1 { font-size: 24px; margin: 12px 0 16px; }
+.matrix-page .matrix-filters { display: flex; align-items: flex-end; gap: 12px; margin: 0 0 14px; }
+.matrix-program-field { flex: 1; }
+.matrix-program-field label, .matrix-search label { font-size: 13px; margin-bottom: 4px; }
+.matrix-filters button { flex-shrink: 0; margin: 0; min-height: 47px; }
+.matrix-view-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.matrix-view-filters a { padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--muted-strong); text-decoration: none; font-size: 13px; }
+.matrix-view-filters a[aria-current] { background: var(--primary-subtle); border-color: var(--primary); color: var(--primary-dark); }
+.matrix-view-filters strong { margin-left: 6px; }
+.matrix-overview { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 20px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+.matrix-overview > p { margin: 0; }
+.matrix-help { max-width: 100%; }
+.matrix-help[open] { flex-basis: 100%; }
+.matrix-help p { margin: 10px 0 0; }
+.matrix-program-warning { margin-top: 8px; color: var(--warning-text); font-size: 13px; }
+.matrix-program-warning p { margin: 6px 0 0; }
+.matrix-panel { min-width: 0; }
+.matrix-page .matrix-table-heading { gap: 12px; align-items: center; flex-shrink: 0; }
+.matrix-page .matrix-table-heading h2 { font-size: 18px; margin: 0 0 4px; }
+.matrix-page .matrix-table-heading p { font-size: 13px; margin: 0; }
+.matrix-search { width: 250px; max-width: 100%; }
+.matrix-search input { padding: 7px 10px !important; font-size: 13px; }
+.matrix-search-count { font-size: 12px; color: var(--muted); }
+.matrix-page .matrix-scroll { margin-top: 12px; min-height: 180px; }
+.matrix-page .competency-grid th, .matrix-page .competency-grid td { padding: 10px 12px !important; }
+.matrix-page .competency-grid .matrix-first-column { min-width: 300px; width: 320px; max-width: 360px; }
+.matrix-page .matrix-course-column { min-width: 190px; max-width: 240px; font-size: 13px; }
+.matrix-page .matrix-course-title { margin-bottom: 6px; overflow-wrap: anywhere; }
+.matrix-page .matrix-source { margin-bottom: 4px; font-size: 13px; }
+.matrix-page .matrix-column-note { margin-top: 6px; font-size: 12px; }
+.matrix-page .matrix-heading-note { font-size: 12px; margin-top: 4px; }
+.matrix-page .matrix-draft-status { white-space: normal; padding: 3px 8px !important; }
+.matrix-page .matrix-code { font-size: 13px; }
+.matrix-page .matrix-description { margin-top: 4px; }
+.matrix-page .matrix-description summary, .matrix-page .matrix-description p { font-size: 13px; }
+.matrix-page .matrix-description summary span { -webkit-line-clamp: 1; }
+.matrix-page .matrix-check { width: 24px; height: 24px; font-size: 15px; }
+.matrix-search-empty { font-size: 13px; margin: 12px 0 0; }
+.matrix-page :focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+@media (min-width: 761px) {
+    .matrix-workspace { height: calc(100dvh - 6px); }
+    .matrix-panel { display: flex; flex-direction: column; flex: 1; min-height: 260px; }
+    .matrix-page .matrix-scroll { flex: 1; max-height: none; }
+    .matrix-page .matrix-catalogue .matrix-scroll { max-height: 45vh; }
+}
+@media (max-width: 1200px) {
+    .matrix-workspace { margin-left: 12px; margin-right: 12px; }
+}
+@media (max-width: 760px) {
+    .matrix-workspace > .card { padding: 16px !important; }
+    .matrix-toolbar h1 { font-size: 22px; }
+    .matrix-page .matrix-filters { flex-direction: column; align-items: stretch; gap: 8px; }
+    .matrix-page .matrix-navigation { align-items: flex-start; flex-wrap: wrap; }
+    .matrix-page .matrix-scroll { max-height: 58dvh; }
+    .matrix-page .competency-grid .matrix-first-column { min-width: 150px; width: 150px; max-width: 150px; overflow-wrap: anywhere; }
+    .matrix-page .matrix-course-column { min-width: 170px; }
+    .matrix-page .matrix-unassigned { margin-left: 0; font-size: 11px; }
+    .matrix-search { width: 100%; }
+}
+.matrix-page .matrix-filters select { margin-bottom: 0; }
+.matrix-page .matrix-help { margin: 0; }
+.matrix-page .matrix-program-warning { margin-bottom: 0; }
+.matrix-page .matrix-description summary { display: flex; align-items: baseline; gap: 5px; }
+.matrix-page .matrix-description summary::before { content: '▸'; flex-shrink: 0; }
+.matrix-page .matrix-description[open] summary::before { content: '▾'; }
+.matrix-page .matrix-description summary span { flex: 1; min-width: 0; }
