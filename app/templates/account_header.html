@@ -1,23 +1,8 @@
-<div class="top-bar">
-    <h1>Панель управления РПД</h1>
-
-    <p>Вы вошли как:<strong>{{ user.name }}</strong>
-        ({{ user.email }})
-    </p>
-
-    <p>Активная роль:<strong class="role-badge">{{ role_labels[active_role] }}</strong>
-    </p>
-
-    <p>
-        {% for role in user_roles %}
-            {% if role != active_role %}
-                <a class="button-link" href="/switch-role?role={{ role }}">
-                    Переключиться на {{ role_labels[role] }}
-                </a>
-            {% endif %}
-        {% endfor %}
-
-        <a class="button-link" href="/admin/users">Пользователи</a>
-        <a class="button-link" href="/logout">Выйти</a>
-    </p>
-</div>
+<header class="top-bar account-header">
+    <div class="account-heading"><h1>Панель управления РПД</h1><span class="account-identity"><strong>{{ user.name }}</strong><span>{{ user.email }}</span></span></div>
+    <nav class="account-nav" aria-label="Аккаунт и роль">
+        <span class="account-role"><span class="role-badge">{{ role_labels[active_role] }}</span>{% if user_roles | length > 1 %}<a href="/select-role">Сменить роль</a>{% endif %}</span>
+        <a href="/admin/users">Пользователи</a>
+        <a href="/logout">Выйти</a>
+    </nav>
+</header>

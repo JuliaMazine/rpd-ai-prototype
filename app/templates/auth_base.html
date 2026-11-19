@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}РПД{% endblock %}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/account.css">
+</head>
+<body class="auth-page" data-role="{{ ui_role or '' }}">
+<div class="auth-shell">
+    <header class="auth-brand">РПД</header>
+    <main>
+        <section class="auth-panel" aria-labelledby="auth-heading">{% block content %}{% endblock %}</section>
+    </main>
+</div>
+</body>
+</html>

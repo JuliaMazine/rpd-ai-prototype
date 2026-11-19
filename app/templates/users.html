@@ -1,167 +1,46 @@
+{% from "role_options.html" import role_options with context %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Пользователи — РПД</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            background: #f7f7f7;
-        }
-
-        h1, h2 {
-            color: #222;
-        }
-
-        .card {
-            background: white;
-            border: 1px solid #ccc;
-            padding: 20px;
-            margin-bottom: 20px;
-            max-width: 800px;
-        }
-
-        input {
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            margin-bottom: 12px;
-        }
-
-        button {
-            padding: 8px 14px;
-            cursor: pointer;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            margin-bottom: 30px;
-        }
-
-        th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
-            vertical-align: top;
-        }
-
-        th {
-            background: #eaeaea;
-        }
-
-        .message {
-            background: #ecffec;
-            border: 1px solid #8c8;
-            padding: 10px;
-            margin-bottom: 15px;
-        }
-
-        .error {
-            background: #ffecec;
-            border: 1px solid #d88;
-            padding: 10px;
-            margin-bottom: 15px;
-        }
-
-        .role-option {
-            margin-bottom: 8px;
-        }
-
-        .role-option input {
-            width: auto;
-            margin-right: 6px;
-        }
-
-        a {
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-
-        code {
-            background: #eee;
-            padding: 2px 4px;
-        }
-    </style>
     <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/account.css">
 </head>
-<body data-role="{{ ui_role or '' }}">
-
-
-<a href="/dashboard">← К панели управления</a>
-
-<h1>Пользователи</h1>
-
-<div class="card">
-    <p>Текущий пользователь:<strong>{{ current_user.name }}</strong>
-        ({{ current_user.email }})
-    </p>
-</div>
-
-<div class="card">
-    <h2>Создать пользователя</h2>
-
-    {% if error %}
-        <div class="error">{{ t(error) }}</div>
-    {% endif %}
-
-    {% if success %}
-        <div class="message">{{ success }}</div>
-    {% endif %}
-
-    <form action="/admin/users" method="post">
-        <label>Имя</label>
-        <input type="text" name="name" placeholder="Например: Мария Иванова" required>
-
-        <label>Электронная почта</label>
-        <input type="email" name="email" placeholder="Например: maria@example.com" required>
-
-        <label>Пароль</label>
-        <input type="password" name="password" placeholder="Не менее 8 символов" required>
-
-        <p>Роли</p>
-
-        <div class="role-option">
-            <label>
-                <input type="checkbox" name="roles" value="{{ role_teacher }}">Преподаватель</label>
-        </div>
-
-        <div class="role-option">
-            <label>
-                <input type="checkbox" name="roles" value="{{ role_methodist }}">Методист</label>
-        </div>
-
-        <button type="submit">Создать пользователя</button>
-    </form>
-</div>
-
-<h2>Пользователи</h2>
-
-<table>
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Имя</th>
-            <th>Электронная почта</th>
-            <th>Роли</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        {% for user in users %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.name }}</td>
-                <td><code>{{ user.email }}</code></td>
-                <td>
-                    {% for role in user.roles %}
-                        <div>{{ role_labels[role.role] }}</div>
-                    {% endfor %}
-                </td>
-            </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
+<body class="users-page" data-role="{{ ui_role or '' }}">
+<main class="users-shell">
+    <header class="users-heading">
+        <a href="/dashboard">← К панели управления</a>
+        <h1>Пользователи и роли</h1>
+    </header>
+    <div class="users-layout">
+        <section class="auth-panel" aria-labelledby="create-user-heading">
+            <h2 id="create-user-heading">Новый пользователь</h2>
+            {% if error %}<div class="error" role="alert">{{ t(error) }}</div>{% endif %}
+            {% if success %}<div class="success" role="status">{{ success }}</div>{% endif %}
+            <form action="/admin/users" method="post" class="account-form">
+                <div class="account-field"><label for="user-name">Имя</label><input id="user-name" type="text" name="name" value="{{ form_name or '' }}" placeholder="Мария Иванова" autocomplete="name" required></div>
+                <div class="account-field"><label for="user-email">Электронная почта</label><input id="user-email" type="email" name="email" value="{{ form_email or '' }}" placeholder="name@university.ru" autocomplete="off" required></div>
+                <div class="account-field"><label for="user-password">Пароль</label><input id="user-password" type="password" name="password" minlength="8" autocomplete="new-password" aria-describedby="user-password-hint" required><p id="user-password-hint" class="field-hint">Не менее 8 символов</p></div>
+                <fieldset class="role-fieldset"><legend>Доступные роли</legend>{{ role_options(role_labels, 'checkbox', 'roles', selected_roles or [], 'user') }}</fieldset>
+                <button class="auth-submit" type="submit">Создать пользователя</button>
+            </form>
+        </section>
+        <section class="auth-panel user-directory" aria-labelledby="directory-heading">
+            <h2 id="directory-heading">Все пользователи <span class="role-badge">{{ users | length }}</span></h2>
+            <div class="users-table" role="region" aria-label="Пользователи и доступные роли" tabindex="0">
+                <table>
+                    <thead><tr><th scope="col">Пользователь</th><th scope="col">Роли</th></tr></thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr><td><strong>{{ user.name }}</strong><span class="user-email">{{ user.email }}</span></td><td><div class="user-role-list">{% for role in user.roles %}<span class="directory-role" data-role-option="{{ role.role }}">{{ role_labels.get(role.role, role.role) }}</span>{% else %}<span class="field-hint">Роли не назначены</span>{% endfor %}</div></td></tr>
+                        {% else %}<tr><td colspan="2">Пользователей пока нет.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
 </body>
 </html>
