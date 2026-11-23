@@ -68,6 +68,7 @@ async def create_user_from_admin(
         create_user(db, name=name, email=email, password=password, roles=roles)
     except UserValidationError as error:
         context["error"] = str(error)
+        context.update(form_name=name, form_email=email, selected_roles=roles)
         return templates.TemplateResponse(
             request=request, name="users.html", context=context, status_code=400,
         )

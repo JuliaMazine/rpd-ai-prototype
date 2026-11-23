@@ -1,0 +1,10 @@
+{% macro role_options(roles, input_type, field_name, selected, prefix) %}
+<div class="role-options">
+    {% for role in roles %}
+    <label class="role-choice" data-role-option="{{ role }}" for="{{ prefix }}-{{ role }}">
+        <input id="{{ prefix }}-{{ role }}" type="{{ input_type }}" name="{{ field_name }}" value="{{ role }}" {% if role in selected %}checked{% endif %} {% if input_type == 'radio' %}required{% endif %}>
+        <span class="role-choice-copy"><strong>{{ role_labels.get(role, role) }}</strong></span>
+    </label>
+    {% endfor %}
+</div>
+{% endmacro %}

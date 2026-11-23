@@ -1,0 +1,65 @@
+/* Account screens share the application's role palettes and form controls. */
+.auth-page[data-role] { background: var(--bg); }
+.auth-page::before { display: none; }
+.auth-shell { width: min(400px, calc(100% - 32px)); margin: clamp(32px, 10vh, 96px) auto 0; }
+.auth-brand { margin-bottom: 20px; color: var(--muted); font-size: 15px; font-weight: 650; }
+.auth-panel { min-width: 0; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 28px; }
+.auth-panel h1 { font-size: 23px; margin-bottom: 24px; }
+.auth-panel h2 { font-size: 20px; margin-bottom: 24px; }
+.auth-panel button { background: var(--primary) !important; box-shadow: none !important; border-radius: 8px !important; }
+.auth-panel button:hover { background: var(--primary-dark) !important; transform: none; }
+.auth-panel input:not([type="checkbox"]):not([type="radio"]) { border-radius: 8px; }
+.account-form { margin: 0; display: grid; gap: 18px; }
+.account-field { min-width: 0; }
+.account-field label { font-size: 13px; margin-bottom: 6px; }
+.account-field input { margin: 0; min-height: 46px; }
+.account-field input::placeholder { color: var(--muted); opacity: .85; }
+.field-hint { color: var(--muted); font-size: 12px; margin: 6px 0 0; }
+.role-fieldset { min-width: 0; border: 0; padding: 0; margin: 0; }
+.role-fieldset legend { font-weight: 650; font-size: 13px; margin-bottom: 8px; }
+.role-options { display: grid; gap: 10px; }
+.role-choice { --role-accent: #23603e; --role-surface: #eff8f1; display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; background: white; transition: border-color .15s, background .15s; }
+.role-choice[data-role-option="USER_METHODIST"] { --role-accent: #5c3a7e; --role-surface: #f5effa; }
+.role-choice:hover, .role-choice:has(input:checked) { border-color: var(--role-accent); background: var(--role-surface); }
+.role-choice:has(input:focus-visible) { outline: 3px solid var(--role-accent); outline-offset: 3px; }
+.role-choice input[type] { width: 18px; height: 18px; flex: 0 0 18px; padding: 0 !important; margin: 0; accent-color: var(--role-accent); }
+.role-choice-copy { min-width: 0; }
+.role-choice-copy strong { display: block; color: var(--role-accent); font-size: 14px; }
+.account-form .auth-submit { width: 100%; justify-content: center; margin: 4px 0 0; min-height: 46px; }
+.auth-identity { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; margin: -12px 0 24px; }
+.auth-back { display: block; text-align: center; font-size: 13px; margin-top: 18px; }
+.auth-panel .error, .auth-panel .success { margin: 0 0 20px !important; font-size: 13px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.auth-page a:focus-visible, .auth-page button:focus-visible, .account-header a:focus-visible { outline: 3px solid var(--primary); outline-offset: 4px; }
+.account-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.account-heading { min-width: 0; }
+.account-identity { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.account-identity strong { color: var(--muted-strong); }
+.account-nav { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; font-size: 13px; }
+.account-nav > a { color: var(--muted-strong); }
+.account-role { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.account-role .role-badge { font-size: 12px; font-weight: 700; }
+.users-shell { max-width: var(--page-width); width: calc(100% - 64px); margin: 32px auto; }
+.users-heading { margin-bottom: 28px; }
+.users-heading h1 { margin: 18px 0 10px; }
+.users-layout { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.users-table { overflow: auto; }
+.users-table table { margin: 0; }
+.user-email { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; overflow-wrap: anywhere; }
+.user-role-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.directory-role { font-size: 12px; font-weight: 650; border-radius: 999px; padding: 3px 10px; background: #eff8f1; color: #23603e; }
+.directory-role[data-role-option="USER_METHODIST"] { background: #f5effa; color: #5c3a7e; }
+.users-page :focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+@media (max-width: 900px) {
+    .users-shell { width: calc(100% - 32px); }
+    .users-layout { grid-template-columns: 1fr; }
+    .account-header { align-items: flex-start; flex-direction: column; gap: 14px; }
+}
+@media (max-width: 480px) {
+    .auth-panel { padding: 24px 20px; }
+    .account-nav { gap: 12px 18px; }
+    .account-role { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .auth-page *, .account-header * { transition: none !important; }
+}

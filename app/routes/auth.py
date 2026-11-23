@@ -25,7 +25,7 @@ def home():
 
 
 @router.get("/login", response_class=HTMLResponse)
-def login_page(request: Request):
+def login_page(request: Request, mode: str = "login"):
     return templates.TemplateResponse(
         request=request,
         name="login.html",
@@ -33,6 +33,7 @@ def login_page(request: Request):
             "error": None,
             "success": None,
             "email": "",
+            "mode": "register" if mode == "register" else "login",
         },
     )
 
@@ -44,6 +45,7 @@ def login(
     password: str = Form(...),
     db: Session = Depends(get_db),
 ):
+    email = email.strip()
     user = db.query(User).filter(User.email == email).first()
 
     if user is None or not verify_password(password, user.password_hash):
@@ -54,6 +56,7 @@ def login(
                 "error": "Authorization failed",
                 "success": None,
                 "email": email,
+                "mode": "login",
             },
             status_code=401,
         )
@@ -87,15 +90,19 @@ async def register(
     except UserValidationError as error:
         return templates.TemplateResponse(
             request=request, name="login.html",
-            context={"error": str(error), "success": None, "email": email},
+            context={
+                "error": str(error), "success": None, "email": email,
+                "name": name, "selected_roles": roles, "mode": "register",
+            },
             status_code=400,
         )
 
     request.session.clear()
     request.session["user_id"] = new_user.id
 
-    if len(roles) == 1:
-        request.session["active_role"] = roles[0]
+    user_roles = get_user_roles(new_user)
+    if len(user_roles) == 1:
+        request.session["active_role"] = user_roles[0]
         return RedirectResponse(url="/dashboard", status_code=303)
 
     return RedirectResponse(url="/select-role", status_code=303)

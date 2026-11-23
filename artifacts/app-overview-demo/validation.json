@@ -1,0 +1,15 @@
+{
+  "browser_errors": [],
+  "final_status": "RPD_VALIDATED",
+  "exported_docx": true,
+  "source_commit": "38d5b2c",
+  "synthetic_data": true,
+  "duration_seconds": 119.92,
+  "frame_count": 2998,
+  "width": 1440,
+  "height": 980,
+  "fps": 25,
+  "full_decode": "passed",
+  "english_captions": "burned in, with separate SRT",
+  "size_bytes": 2941888
+}
