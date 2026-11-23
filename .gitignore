@@ -29,3 +29,10 @@ Thumbs.db
 
 # Local embedding index
 .cache/
+
+# Runtime uploads (existing tracked samples remain tracked)
+/uploads/
+
+# Local environment overrides; keep the shareable example
+.env.*
+!.env.example
